@@ -22,7 +22,7 @@ export const parseCSVData = (csvContent: string): YearData[] => {
   const yearRow = lines[yearRowIndex].split(',');
 
   // Identify column indices for each year
-  // Pattern: Years are separated by 6 columns (Total + 5 weeks) typically.
+  // Pattern: Years are separated by 6 or 7 columns usually.
   
   const yearIndices: { year: number; colIndex: number }[] = [];
   
@@ -59,10 +59,10 @@ export const parseCSVData = (csvContent: string): YearData[] => {
         let weekVal = parseNumber(row[colIndex + w]);
         
         // SANITY CHECK: 
-        // If a weekly value is absurdly high (e.g. > 900km), it's likely a corruption 
+        // If a weekly value is absurdly high (e.g. > 500km), it's likely a corruption 
         // caused by the previous bug where columns merged (e.g., 10km + 1200km total -> 101200).
-        // We reset it to 0 to "heal" the data.
-        if (weekVal > 900) {
+        // We reset it to 0 to "heal" the data automatically.
+        if (weekVal > 500) {
           weekVal = 0; 
         }
 
@@ -100,18 +100,18 @@ export const exportToCSV = (yearsData: YearData[]): string => {
   
   // Row 2: Weeks header
   // Start with 3 empty cols to align with typical structure (Month Name, empty, empty, Total...)
+  // We add an extra empty column at the end of each block to match stride 7
   csv += ",,,"; 
   yearsData.forEach(() => {
-    // Note the trailing comma to create the separator column
-    csv += "Total,Semana 1,Semana 2,Semana 3,Semana 4,Semana 5,";
+    csv += "Total,Semana 1,Semana 2,Semana 3,Semana 4,Semana 5,,";
   });
   csv += "\n";
 
   // Row 3: Years
   csv += ",,,";
   yearsData.forEach(y => {
-    // Year occupies 1 column, then 5 empty for weeks, then 1 empty for separator = 7 columns stride
-    csv += `${y.year},,,,,,`;
+    // Year occupies 1 column, then 5 weeks, then 1 separator = 7 columns stride
+    csv += `${y.year},,,,,,,`;
   });
   csv += "\n";
 
@@ -122,9 +122,8 @@ export const exportToCSV = (yearsData: YearData[]): string => {
       const mData = y.months[mIdx];
       const val = (v: number) => (v === undefined || v === null || isNaN(v)) ? 0 : v;
       
-      // CRITICAL FIX: Added trailing comma after the last value
-      // This ensures the "Semana 5" of this year doesn't merge with "Total" of next year
-      csv += `${val(mData.total)},${val(mData.weeks[0].value)},${val(mData.weeks[1].value)},${val(mData.weeks[2].value)},${val(mData.weeks[3].value)},${val(mData.weeks[4].value)},`;
+      // We explicitly add a trailing comma to create the empty separator column
+      csv += `${val(mData.total)},${val(mData.weeks[0].value)},${val(mData.weeks[1].value)},${val(mData.weeks[2].value)},${val(mData.weeks[3].value)},${val(mData.weeks[4].value)},,`;
     });
     csv += "\n";
   });
