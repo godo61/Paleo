@@ -5,7 +5,7 @@ import { YearData, LogEntry } from './types';
 import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
-import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, Cloud, LogIn, CloudOff } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, Cloud, LogIn, CloudOff, RefreshCw } from 'lucide-react';
 import { supabase, isConfigured } from './supabaseClient';
 
 // Custom Icon for Piragua (Kayak)
@@ -381,7 +381,14 @@ function App() {
                         {isOfflineMode ? (
                            <span className="text-slate-500 flex items-center gap-1"><CloudOff size={10} /> Local</span>
                         ) : (
-                           <span className="text-green-500 flex items-center gap-1"><Cloud size={10} /> {userEmail}</span>
+                           <div className="flex items-center gap-2">
+                               <span className="text-green-500 flex items-center gap-1"><Cloud size={10} /> {userEmail}</span>
+                               {isSyncing && (
+                                   <span className="flex items-center gap-1 text-blue-500 animate-pulse">
+                                       <RefreshCw size={10} className="animate-spin" /> Sincronizando...
+                                   </span>
+                               )}
+                           </div>
                         )}
                     </div>
                 </div>
