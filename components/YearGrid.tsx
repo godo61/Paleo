@@ -142,6 +142,18 @@ const YearGrid: React.FC<YearGridProps> = ({ data, onUpdate, lang }) => {
                     </td>
                   ))}
               </tr>
+              {/* Monthly Average Row */}
+              <tr className="border-t border-slate-200 dark:border-slate-600 text-sm">
+                  <td className="px-4 py-2 text-slate-500 dark:text-slate-400 uppercase text-xs tracking-wider">{t.monthlyMean}</td>
+                  <td className="px-4 py-2 text-center text-blue-600 dark:text-blue-300 font-medium">
+                    {(data.total / 12).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+                  </td>
+                  {weeklyTotals.map((total, idx) => (
+                    <td key={idx} className="px-2 py-2 text-center text-slate-600 dark:text-slate-300 font-medium">
+                      {(total / 12).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                    </td>
+                  ))}
+              </tr>
           </tfoot>
         </table>
       </div>
