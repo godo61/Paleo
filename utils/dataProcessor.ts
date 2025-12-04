@@ -129,3 +129,4 @@ export const exportToCSV = (yearsData: YearData[]): string => {
   });
 
   return csv;
+};
