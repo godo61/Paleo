@@ -6,7 +6,7 @@ import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
 import HelpModal from './components/HelpModal';
-import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, CloudOff, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert, Smartphone } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert, Smartphone } from 'lucide-react';
 import { supabase, isConfigured } from './supabaseClient';
 
 // Custom Icon for Piragua (Kayak)
@@ -57,7 +57,6 @@ function App() {
 
   // --- INSTALLATION LOGIC ---
   useEffect(() => {
-    // Detect Android/Desktop install capability
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -66,11 +65,9 @@ function App() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Detect iOS
     const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIosDevice);
 
-    // Check Dark Mode preference
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setDarkMode(true);
     }
@@ -98,27 +95,20 @@ function App() {
   const setDefaultYear = (dataset: YearData[]) => {
     if (!dataset || dataset.length === 0) return;
     const currentYear = new Date().getFullYear();
-    
-    // 1. Try to select Current Year
     const idx = dataset.findIndex(d => d.year === currentYear);
     if (idx !== -1) {
       setSelectedYearIndex(idx);
       return;
     }
-    
-    // 2. If not found, try to select the first year that is NOT in the future (<= currentYear)
-    // This skips years like 2026 if they exist but we are in 2025.
     const validIdx = dataset.findIndex(d => d.year < currentYear);
     if (validIdx !== -1) {
       setSelectedYearIndex(validIdx);
     } else {
-      // 3. Fallback: Select the first available (even if future)
       setSelectedYearIndex(0);
     }
   };
 
   // --- AUTH & DATA LOADING ---
-
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isConfigured()) {
@@ -129,40 +119,28 @@ function App() {
       alert("Por favor introduce email y contraseña");
       return;
     }
-
     setAuthLoading(true);
-
     try {
       let authResponse;
-      
       if (authMode === 'signup') {
-        // REGISTER
         authResponse = await supabase.auth.signUp({
           email: userEmail,
           password: password,
         });
       } else {
-        // LOGIN
         authResponse = await supabase.auth.signInWithPassword({
           email: userEmail,
           password: password,
         });
       }
-
-      if (authResponse.error) {
-        throw authResponse.error;
-      }
-
+      if (authResponse.error) throw authResponse.error;
       const user = authResponse.data.user;
       if (!user) throw new Error("No user returned");
 
-      // Load User Data
       await loadUserData(user.id, user.email || userEmail);
-      
       setIsLoggedIn(true);
       setIsOfflineMode(false);
       localStorage.setItem('paleoUser', userEmail); 
-
     } catch (err: any) {
       console.error("Auth error:", err);
       alert(err.message || "Error de autenticación. Revisa tus credenciales.");
@@ -173,8 +151,6 @@ function App() {
 
   const loadUserData = async (userId: string, email: string) => {
     try {
-      // Fetch data using RLS (Row Level Security)
-      // We explicitly select using the authenticated session
       const { data: dbData, error } = await supabase
         .from('user_data')
         .select('*')
@@ -183,7 +159,6 @@ function App() {
       if (error) throw error;
 
       if (dbData) {
-        // User exists, load data
         if (dbData.years_data) {
           setData(dbData.years_data);
           setDefaultYear(dbData.years_data);
@@ -197,8 +172,6 @@ function App() {
              setActivityLog(parsedLog);
         }
       } else {
-        // BLANK SLATE FOR NEW USERS
-        // Instead of loading the historical CSV, we create a fresh empty year for the current year.
         const currentYear = new Date().getFullYear();
         const emptyYearData: YearData = {
           year: currentYear,
@@ -210,7 +183,6 @@ function App() {
           }))
         };
         const initialData = [emptyYearData];
-
         const { error: insertError } = await supabase
           .from('user_data')
           .insert([{ 
@@ -219,13 +191,12 @@ function App() {
             years_data: initialData, 
             activity_log: [] 
           }]);
-        
         if (!insertError) {
           setData(initialData);
           setDefaultYear(initialData);
         } else {
             console.error("Insert error (RLS):", insertError);
-            setData(initialData); // Fallback to display data anyway
+            setData(initialData);
             setDefaultYear(initialData);
         }
       }
@@ -239,7 +210,6 @@ function App() {
     setIsLoggedIn(true);
     setIsOfflineMode(true);
     setUserEmail('Invitado');
-    // Load from local storage or defaults
     const localData = localStorage.getItem('paleoData');
     const localLog = localStorage.getItem('paleoLog');
     
@@ -248,8 +218,6 @@ function App() {
         setData(parsed);
         setDefaultYear(parsed);
     } else {
-        // BLANK SLATE FOR GUESTS
-        // Instead of loading the historical CSV, we create a fresh empty year for the current year.
         const currentYear = new Date().getFullYear();
         const emptyYearData: YearData = {
           year: currentYear,
@@ -280,21 +248,18 @@ function App() {
   };
 
   const syncData = async (newData: YearData[], newLog: LogEntry[]) => {
-    // Local persistence always
     localStorage.setItem('paleoData', JSON.stringify(newData));
     localStorage.setItem('paleoLog', JSON.stringify(newLog));
 
     if (isOfflineMode || !isLoggedIn) return;
-    
     setIsSyncing(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       await supabase
         .from('user_data')
         .update({ years_data: newData, activity_log: newLog, updated_at: new Date() })
-        .eq('id', user.id); // RLS allows this
+        .eq('id', user.id); 
     } catch (err) {
       console.error("Error syncing:", err);
     } finally {
@@ -304,19 +269,12 @@ function App() {
 
   const handleDeleteAccount = async () => {
     if (!window.confirm(t.deleteAccountConfirm)) return;
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // Delete data row
-        const { error } = await supabase
-          .from('user_data')
-          .delete()
-          .eq('id', user.id);
-        
+        const { error } = await supabase.from('user_data').delete().eq('id', user.id);
         if (error) throw error;
       }
-
       await supabase.auth.signOut();
       setIsLoggedIn(false);
       setUserEmail('');
@@ -329,8 +287,29 @@ function App() {
     }
   };
 
+  const handleClearLocalData = () => {
+    if (confirm("¿Estás seguro? Se borrarán todos los datos DE ESTE DISPOSITIVO. Usa esta opción si eres un usuario nuevo y quieres limpiar los datos de prueba.")) {
+      localStorage.removeItem('paleoData');
+      localStorage.removeItem('paleoLog');
+      localStorage.removeItem('paleoUser');
+      const currentYear = new Date().getFullYear();
+      const emptyYearData: YearData = {
+        year: currentYear,
+        total: 0,
+        months: MONTH_NAMES.map(name => ({
+          name: name,
+          total: 0,
+          weeks: Array.from({ length: 5 }, (_, i) => ({ weekNum: i + 1, value: 0 }))
+        }))
+      };
+      setData([emptyYearData]);
+      setActivityLog([]);
+      setDefaultYear([emptyYearData]);
+      alert("Datos locales borrados.");
+    }
+  };
+
   useEffect(() => {
-    // Check if session exists in Supabase (persisted login)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && session.user && isConfigured()) {
         setUserEmail(session.user.email || '');
@@ -340,33 +319,23 @@ function App() {
     });
   }, []);
 
-  // --- APP LOGIC ---
-
   const handleDataUpdate = (year: number, monthIdx: number, weekIdx: number, newVal: number) => {
     const newData = [...data];
     const yearIndex = newData.findIndex(d => d.year === year);
     if (yearIndex === -1) return;
-
     const yearRecord = { ...newData[yearIndex] };
     const months = [...yearRecord.months];
     const monthRecord = { ...months[monthIdx] };
     const weeks = [...monthRecord.weeks];
-    
     weeks[weekIdx] = { ...weeks[weekIdx], value: newVal };
-    
     const newMonthTotal = weeks.reduce((sum, w) => sum + w.value, 0);
-    
     monthRecord.weeks = weeks;
     monthRecord.total = parseFloat(newMonthTotal.toFixed(2));
     months[monthIdx] = monthRecord;
     yearRecord.months = months;
-    
     yearRecord.total = parseFloat(months.reduce((sum, m) => sum + m.total, 0).toFixed(2));
-    
     newData[yearIndex] = yearRecord;
-    
     setData(newData);
-    // Trigger Cloud Sync
     syncData(newData, activityLog);
   };
 
@@ -374,7 +343,6 @@ function App() {
     const year = date.getFullYear();
     const monthIdx = date.getMonth(); 
     const day = date.getDate();
-
     let weekIdx = 0;
     if (day <= 7) weekIdx = 0;
     else if (day <= 14) weekIdx = 1;
@@ -382,13 +350,10 @@ function App() {
     else if (day <= 28) weekIdx = 3;
     else weekIdx = 4;
 
-    // Clone current data
     let newData = [...data];
     let yearIndex = newData.findIndex(d => d.year === year);
 
-    // AUTOMATIC YEAR CREATION
     if (yearIndex === -1) {
-      // Create new year structure
       const newYearData: YearData = {
         year: year,
         total: 0,
@@ -398,16 +363,13 @@ function App() {
           weeks: Array.from({ length: 5 }, (_, i) => ({ weekNum: i + 1, value: 0 }))
         }))
       };
-      // Add to data and sort descending (so new year appears first)
       newData = [newYearData, ...newData].sort((a, b) => b.year - a.year);
-      // Re-calculate index after sorting
       yearIndex = newData.findIndex(d => d.year === year);
     }
 
     const currentVal = newData[yearIndex].months[monthIdx].weeks[weekIdx].value || 0;
     const newVal = parseFloat((currentVal + value).toFixed(2));
 
-    // Update Log
     const newLogEntry: LogEntry = {
       id: Date.now().toString(),
       date: date,
@@ -416,15 +378,12 @@ function App() {
       timestamp: new Date()
     };
     const newActivityLog = [newLogEntry, ...activityLog];
-    
     setActivityLog(newActivityLog);
 
-    // Update Data structure
     const yearRecord = { ...newData[yearIndex] };
     const months = [...yearRecord.months];
     const monthRecord = { ...months[monthIdx] };
     const weeks = [...monthRecord.weeks];
-    
     weeks[weekIdx] = { ...weeks[weekIdx], value: newVal };
     const newMonthTotal = weeks.reduce((sum, w) => sum + w.value, 0);
     monthRecord.weeks = weeks;
@@ -434,11 +393,7 @@ function App() {
     yearRecord.total = parseFloat(months.reduce((sum, m) => sum + m.total, 0).toFixed(2));
     newData[yearIndex] = yearRecord;
 
-    newData[yearIndex] = yearRecord;
-
     setData(newData);
-    
-    // Sync both
     syncData(newData, newActivityLog);
 
     if (yearIndex !== selectedYearIndex) setSelectedYearIndex(yearIndex);
@@ -478,7 +433,7 @@ function App() {
           if (parsed.length > 0) {
             setData(parsed);
             setDefaultYear(parsed);
-            syncData(parsed, activityLog); // Sync imported data
+            syncData(parsed, activityLog);
             alert(t.importSuccess);
           } else {
             alert(t.importError);
@@ -501,7 +456,6 @@ function App() {
       setAuthMode('login');
   };
 
-  // --- LOGIN SCREEN ---
   if (!isLoggedIn) {
       return (
           <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -602,7 +556,7 @@ function App() {
         
         {/* Help Modal */}
         <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} lang={lang} />
-
+        
         {/* Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -801,6 +755,22 @@ function App() {
                             {t.deleteAccount}
                           </button>
                        </div>
+                    )}
+                    
+                    {isOfflineMode && (
+                        <div className="bg-orange-50 dark:bg-orange-900/10 p-4 rounded-xl shadow-sm border border-orange-100 dark:border-orange-900/30">
+                           <div className="flex items-center gap-2 mb-3 pb-2 border-b border-orange-100 dark:border-orange-900/30">
+                              <ShieldAlert size={18} className="text-orange-500" />
+                              <h3 className="font-bold text-orange-700 dark:text-orange-400">Zona de Invitado</h3>
+                           </div>
+                           <button 
+                             onClick={handleClearLocalData}
+                             className="w-full bg-white dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/40 text-orange-600 dark:text-orange-400 font-bold py-2 rounded-lg border border-orange-200 dark:border-orange-800 transition-colors flex items-center justify-center gap-2 text-sm"
+                           >
+                             <Trash2 size={16} />
+                             Borrar Datos Locales
+                           </button>
+                        </div>
                     )}
                   </div>
 

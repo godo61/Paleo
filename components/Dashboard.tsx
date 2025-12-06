@@ -15,14 +15,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   const t = TRANSLATIONS[lang];
   const currentSystemYear = new Date().getFullYear();
 
-  // FILTER LOGIC: Exclude future years (like 2026) from stats and charts
-  // This prevents empty future years created by mistake from skewing averages and showing up in charts.
+  // FILTER LOGIC: Exclude future years
   const validData = data.filter(d => d.year <= currentSystemYear);
-
-  // Sort data descending by year to easily get the most recent ones for history
   const sortedDataDesc = [...validData].sort((a, b) => b.year - a.year);
 
-  // Annual Progress: Last 10 years, but displayed in chronological order (ascending)
+  // Annual Progress: Last 10 years
   const annualData = sortedDataDesc
     .slice(0, 10)
     .sort((a, b) => a.year - b.year)
@@ -31,15 +28,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       total: d.total
     }));
 
-  // Monthly Comparison: Only the last 3 years
-  const comparisonYears = sortedDataDesc.slice(0, 3);
-  const comparisonYearsLabel = comparisonYears.map(y => y.year).join(', ');
+  // Monthly Comparison: Recent 3 Years
+  const recentYearsData = sortedDataDesc.slice(0, 3);
   
   const monthlyComparisonData = Array.from({ length: 12 }, (_, i) => {
-    // Use translated month names for the axis
     const monthName = t.months[i].substring(0, 3);
     const point: any = { name: monthName.toUpperCase() };
-    comparisonYears.forEach(y => {
+    recentYearsData.forEach(y => {
       point[y.year] = y.months[i].total;
     });
     return point;
@@ -47,33 +42,27 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
 
   const totalKm = validData.reduce((acc, curr) => acc + curr.total, 0);
 
-  // LOGIC FIX: Determine "Current Year"
-  // We prioritize the actual system year. Since we filtered validData, we look there.
+  // Determine "Current Year"
   let currentYear = validData.find(d => d.year === currentSystemYear);
-  
   if (!currentYear && validData.length > 0) {
-    currentYear = validData[0]; // Fallback to most recent valid year if current is not started yet
+    currentYear = validData[0];
   }
-  
   const currentYearTotal = currentYear?.total || 0;
 
-  // Calculate All-time Averages based on validData only
-  // Based on the grid structure: 12 months * 5 weeks = 60 weeks per year
+  // Averages
   const totalWeeks = validData.length * 60; 
   const weeklyAvgAllTime = totalWeeks > 0 ? totalKm / totalWeeks : 0;
   const monthlyAvgAllTime = validData.length > 0 ? totalKm / (validData.length * 12) : 0;
   const dailyAvgAllTime = validData.length > 0 ? totalKm / (validData.length * 365) : 0;
 
-  // Colors for the lines
   const colors = [
     '#2563eb', '#ef4444', '#10b981', '#f59e0b', 
     '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', 
     '#6366f1', '#14b8a6', '#f43f5e', '#64748b'
   ];
 
-  // Chart Styles based on Dark Mode
-  const axisColor = darkMode ? '#94a3b8' : '#64748b'; // slate-400 vs slate-500
-  const gridColor = darkMode ? '#334155' : '#e2e8f0'; // slate-700 vs slate-200
+  const axisColor = darkMode ? '#94a3b8' : '#64748b';
+  const gridColor = darkMode ? '#334155' : '#e2e8f0';
   const tooltipStyle = {
     backgroundColor: darkMode ? '#1e293b' : '#fff',
     color: darkMode ? '#f1f5f9' : '#0f172a',
@@ -121,6 +110,45 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Monthly Comparison */}
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors duration-300">
+          <div className="mb-4">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{t.monthlyComparison}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+               {recentYearsData.map(y => y.year).join(', ')}
+            </p>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyComparisonData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+                <XAxis dataKey="name" tick={{fill: axisColor}} axisLine={false} tickLine={false} />
+                <YAxis tick={{fill: axisColor}} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36} 
+                  iconType="circle"
+                  formatter={(value) => <span className="text-slate-600 dark:text-slate-300 font-medium ml-1">{value}</span>}
+                />
+                {recentYearsData.map((yearData, idx) => (
+                  <Line 
+                    key={yearData.year} 
+                    type="monotone" 
+                    dataKey={yearData.year}
+                    name={String(yearData.year)}
+                    stroke={colors[idx % colors.length]} 
+                    strokeWidth={2}
+                    dot={{r: 3}}
+                    activeDot={{r: 5}}
+                    connectNulls
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         {/* Annual Progress */}
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors duration-300">
           <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">{t.annualProgress}</h3>
@@ -136,40 +164,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                 />
                 <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} name={t.kilometers} />
               </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Monthly Comparison */}
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors duration-300">
-          <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">{t.monthlyComparison} ({comparisonYearsLabel})</h3>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyComparisonData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-                <XAxis dataKey="name" tick={{fill: axisColor}} axisLine={false} tickLine={false} />
-                <YAxis tick={{fill: axisColor}} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36} 
-                  iconType="circle"
-                  formatter={(value) => <span className="text-slate-600 dark:text-slate-300 font-medium ml-1">{value}</span>}
-                />
-                {comparisonYears.map((y, idx) => (
-                  <Line 
-                    key={y.year} 
-                    type="monotone" 
-                    dataKey={y.year}
-                    name={String(y.year)}
-                    stroke={colors[idx % colors.length]} 
-                    strokeWidth={2}
-                    dot={{r: 3}}
-                    activeDot={{r: 5}}
-                    connectNulls
-                  />
-                ))}
-              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
