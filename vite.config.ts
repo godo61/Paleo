@@ -17,7 +17,7 @@ export default defineConfig({
         display: 'standalone',
         start_url: '.', 
         scope: '.',
-        orientation: 'portrait',
+        orientation: 'any',
         icons: [
           {
             src: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',

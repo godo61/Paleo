@@ -172,6 +172,8 @@ function App() {
              setActivityLog(parsedLog);
         }
       } else {
+        // BLANK SLATE FOR NEW REGISTERED USERS
+        // Instead of loading INITIAL_CSV_DATA, we create a fresh year
         const currentYear = new Date().getFullYear();
         const emptyYearData: YearData = {
           year: currentYear,
@@ -218,6 +220,7 @@ function App() {
         setData(parsed);
         setDefaultYear(parsed);
     } else {
+        // BLANK SLATE FOR GUESTS
         const currentYear = new Date().getFullYear();
         const emptyYearData: YearData = {
           year: currentYear,
@@ -668,6 +671,10 @@ function App() {
              <button onClick={handleImportClick} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <Upload size={20} className="mb-1" />
               CSV
+            </button>
+            <button onClick={handleExport} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <Download size={20} className="mb-1" />
+              Exportar
             </button>
              <button onClick={handleLogout} className="flex flex-col items-center p-2 text-xs font-medium text-red-500 dark:text-red-400">
               <LogOut size={20} className="mb-1" />

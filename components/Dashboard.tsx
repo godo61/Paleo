@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { YearData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import { TrendingUp, Calendar, Trophy, Activity, Zap, Calculator } from 'lucide-react';
@@ -28,13 +28,37 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       total: d.total
     }));
 
-  // Monthly Comparison: Recent 3 Years
-  const recentYearsData = sortedDataDesc.slice(0, 3);
+  // --- Monthly Comparison Logic ---
+  // State to track which years are selected for comparison
+  const [selectedYears, setSelectedYears] = useState<number[]>([]);
+
+  // Initialize with the top 3 most recent years
+  useEffect(() => {
+    if (sortedDataDesc.length > 0 && selectedYears.length === 0) {
+      const initialSelection = sortedDataDesc.slice(0, 3).map(d => d.year);
+      setSelectedYears(initialSelection);
+    }
+  }, [sortedDataDesc.length]); // Run only when data length changes significantly to avoid reset loops
+
+  const toggleYear = (year: number) => {
+    setSelectedYears(prev => {
+      if (prev.includes(year)) {
+        return prev.filter(y => y !== year);
+      } else {
+        // Limit to 5 years max to keep chart readable? Optional. 
+        // For now let user select as many as they want.
+        return [...prev, year].sort((a, b) => b - a);
+      }
+    });
+  };
+
+  // Filter data based on selection
+  const comparisonDataSrc = sortedDataDesc.filter(d => selectedYears.includes(d.year));
   
   const monthlyComparisonData = Array.from({ length: 12 }, (_, i) => {
     const monthName = t.months[i].substring(0, 3);
     const point: any = { name: monthName.toUpperCase() };
-    recentYearsData.forEach(y => {
+    comparisonDataSrc.forEach(y => {
       point[y.year] = y.months[i].total;
     });
     return point;
@@ -113,10 +137,36 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
         {/* Monthly Comparison */}
         <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 transition-colors duration-300">
           <div className="mb-4">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">{t.monthlyComparison}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-               {recentYearsData.map(y => y.year).join(', ')}
-            </p>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-3">{t.monthlyComparison}</h3>
+            
+            {/* Year Selector Chips */}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {sortedDataDesc.map((d, idx) => {
+                const isSelected = selectedYears.includes(d.year);
+                // We use the same color logic as the chart lines
+                // We need to find the index of this year in the comparisonDataSrc to match color? 
+                // Actually easier to assign stable colors based on year modulo or just use the index from sortedDataDesc
+                const color = colors[idx % colors.length];
+                
+                return (
+                  <button
+                    key={d.year}
+                    onClick={() => toggleYear(d.year)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all border ${
+                      isSelected 
+                        ? 'text-white shadow-sm' 
+                        : 'bg-transparent text-slate-500 border-slate-200 dark:border-slate-600 dark:text-slate-400'
+                    }`}
+                    style={{
+                      backgroundColor: isSelected ? color : undefined,
+                      borderColor: isSelected ? color : undefined,
+                    }}
+                  >
+                    {d.year}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -131,19 +181,26 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                   iconType="circle"
                   formatter={(value) => <span className="text-slate-600 dark:text-slate-300 font-medium ml-1">{value}</span>}
                 />
-                {recentYearsData.map((yearData, idx) => (
-                  <Line 
-                    key={yearData.year} 
-                    type="monotone" 
-                    dataKey={yearData.year}
-                    name={String(yearData.year)}
-                    stroke={colors[idx % colors.length]} 
-                    strokeWidth={2}
-                    dot={{r: 3}}
-                    activeDot={{r: 5}}
-                    connectNulls
-                  />
-                ))}
+                {comparisonDataSrc.map((yearData, idx) => {
+                   // We need to ensure the color matches the chip. 
+                   // Find original index in sortedDataDesc to get the consistent color
+                   const originalIdx = sortedDataDesc.findIndex(d => d.year === yearData.year);
+                   const color = colors[originalIdx % colors.length];
+
+                   return (
+                    <Line 
+                      key={yearData.year} 
+                      type="monotone" 
+                      dataKey={yearData.year}
+                      name={String(yearData.year)}
+                      stroke={color} 
+                      strokeWidth={2}
+                      dot={{r: 3}}
+                      activeDot={{r: 5}}
+                      connectNulls
+                    />
+                  );
+                })}
               </LineChart>
             </ResponsiveContainer>
           </div>
