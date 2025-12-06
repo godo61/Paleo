@@ -670,7 +670,7 @@ function App() {
             </button>
              <button onClick={handleImportClick} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <Upload size={20} className="mb-1" />
-              CSV
+              Importar
             </button>
             <button onClick={handleExport} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <Download size={20} className="mb-1" />

@@ -38,15 +38,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       const initialSelection = sortedDataDesc.slice(0, 3).map(d => d.year);
       setSelectedYears(initialSelection);
     }
-  }, [sortedDataDesc.length]); // Run only when data length changes significantly to avoid reset loops
+  }, [sortedDataDesc.length]);
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev => {
       if (prev.includes(year)) {
         return prev.filter(y => y !== year);
       } else {
-        // Limit to 5 years max to keep chart readable? Optional. 
-        // For now let user select as many as they want.
         return [...prev, year].sort((a, b) => b - a);
       }
     });
@@ -143,9 +141,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
             <div className="flex flex-wrap gap-2 mb-2">
               {sortedDataDesc.map((d, idx) => {
                 const isSelected = selectedYears.includes(d.year);
-                // We use the same color logic as the chart lines
-                // We need to find the index of this year in the comparisonDataSrc to match color? 
-                // Actually easier to assign stable colors based on year modulo or just use the index from sortedDataDesc
                 const color = colors[idx % colors.length];
                 
                 return (
@@ -182,8 +177,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                   formatter={(value) => <span className="text-slate-600 dark:text-slate-300 font-medium ml-1">{value}</span>}
                 />
                 {comparisonDataSrc.map((yearData, idx) => {
-                   // We need to ensure the color matches the chip. 
-                   // Find original index in sortedDataDesc to get the consistent color
+                   // Ensure consistent color
                    const originalIdx = sortedDataDesc.findIndex(d => d.year === yearData.year);
                    const color = colors[originalIdx % colors.length];
 
