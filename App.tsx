@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { parseCSVData, exportToCSV } from './utils/dataProcessor';
-import { INITIAL_CSV_DATA, TRANSLATIONS, MONTH_NAMES } from './constants';
+import { TRANSLATIONS, MONTH_NAMES } from './constants';
 import { YearData, LogEntry } from './types';
 import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
@@ -248,9 +248,21 @@ function App() {
         setData(parsed);
         setDefaultYear(parsed);
     } else {
-        const parsed = parseCSVData(INITIAL_CSV_DATA);
-        setData(parsed);
-        setDefaultYear(parsed);
+        // BLANK SLATE FOR GUESTS
+        // Instead of loading the historical CSV, we create a fresh empty year for the current year.
+        const currentYear = new Date().getFullYear();
+        const emptyYearData: YearData = {
+          year: currentYear,
+          total: 0,
+          months: MONTH_NAMES.map(name => ({
+            name: name,
+            total: 0,
+            weeks: Array.from({ length: 5 }, (_, i) => ({ weekNum: i + 1, value: 0 }))
+          }))
+        };
+        const initialData = [emptyYearData];
+        setData(initialData);
+        setDefaultYear(initialData);
     }
     
     if (localLog) {
