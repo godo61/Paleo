@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { parseCSVData, exportToCSV } from './utils/dataProcessor';
-import { INITIAL_CSV_DATA, TRANSLATIONS } from './constants';
+import { INITIAL_CSV_DATA, TRANSLATIONS, MONTH_NAMES } from './constants';
 import { YearData, LogEntry } from './types';
 import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
@@ -204,12 +204,29 @@ function App() {
     else if (day <= 28) weekIdx = 3;
     else weekIdx = 4;
 
-    const yearIndex = data.findIndex(d => d.year === year);
+    // Clone current data
+    let newData = [...data];
+    let yearIndex = newData.findIndex(d => d.year === year);
+
+    // AUTOMATIC YEAR CREATION
     if (yearIndex === -1) {
-      return { success: false, message: `${t.yearNotFound} ${year}` };
+      // Create new year structure
+      const newYearData: YearData = {
+        year: year,
+        total: 0,
+        months: MONTH_NAMES.map(name => ({
+          name: name,
+          total: 0,
+          weeks: Array.from({ length: 5 }, (_, i) => ({ weekNum: i + 1, value: 0 }))
+        }))
+      };
+      // Add to data and sort descending (so new year appears first)
+      newData = [newYearData, ...newData].sort((a, b) => b.year - a.year);
+      // Re-calculate index after sorting
+      yearIndex = newData.findIndex(d => d.year === year);
     }
 
-    const currentVal = data[yearIndex].months[monthIdx].weeks[weekIdx].value || 0;
+    const currentVal = newData[yearIndex].months[monthIdx].weeks[weekIdx].value || 0;
     const newVal = parseFloat((currentVal + value).toFixed(2));
 
     // Update Log
@@ -224,13 +241,12 @@ function App() {
     
     setActivityLog(newActivityLog);
 
-    // Update Data
-    // We duplicate logic here slightly to sync both at once
-    const newData = [...data];
+    // Update Data structure
     const yearRecord = { ...newData[yearIndex] };
     const months = [...yearRecord.months];
     const monthRecord = { ...months[monthIdx] };
     const weeks = [...monthRecord.weeks];
+    
     weeks[weekIdx] = { ...weeks[weekIdx], value: newVal };
     const newMonthTotal = weeks.reduce((sum, w) => sum + w.value, 0);
     monthRecord.weeks = weeks;
