@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, User, UserPlus, Database, FileSpreadsheet, Download } from 'lucide-react';
+import { X, User, UserPlus, Database, FileSpreadsheet, Download, LayoutDashboard } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 
 interface HelpModalProps {
@@ -67,6 +67,16 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, lang }) => {
 
           {/* Section 2: Features */}
           <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 mt-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg h-fit">
+                <LayoutDashboard size={24} />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 dark:text-white mb-1">{t.helpDashboardTitle}</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{t.helpDashboard}</p>
+              </div>
+            </div>
+
             <div className="flex gap-4">
               <div className="flex-shrink-0 mt-1 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 p-2 rounded-lg h-fit">
                 <FileSpreadsheet size={24} />
