@@ -48,7 +48,26 @@ export const TRANSLATIONS = {
     yearNotFound: "Año no encontrado",
     histDailyAvg: "Media Diaria Histórica",
     importSuccess: "Datos importados correctamente",
-    importError: "Error al leer el archivo CSV"
+    importError: "Error al leer el archivo CSV",
+    guestMode: "Continuar como Invitado",
+    guestModeDesc: "Sus datos se guardan solo en este dispositivo.",
+    help: "Ayuda y Documentación",
+    helpTitle: "Guía de Usuario",
+    helpIntro: "Bienvenido a Master Paleo Analytics. Aquí tienes una guía rápida para sacar el máximo partido a tu entrenamiento.",
+    helpGuestVsUserTitle: "Invitado vs Registrado",
+    helpGuest: "Invitado: Los datos se guardan en la memoria de tu navegador. Si borras el caché o cambias de móvil, los datos se pierden (usa Exportar CSV para guardarlos).",
+    helpUser: "Registrado: Tus datos se guardan seguros en la nube. Puedes acceder desde cualquier dispositivo (PC, móvil, tablet) y todo estará sincronizado.",
+    helpDataEntryTitle: "Introducir Datos",
+    helpDataEntry: "Ve a la pestaña 'Entrada de Datos'. Puedes usar el formulario 'Registro Diario' para añadir entrenamientos específicos con fecha y notas. Estos se suman automáticamente a la semana correspondiente.",
+    helpGridTitle: "Edición Manual",
+    helpGrid: "También puedes editar directamente las celdas de la tabla anual. Pulsa en cualquier número para modificarlo.",
+    helpCsvTitle: "Importar / Exportar",
+    helpCsv: "Usa los botones de la barra superior para descargar una copia de seguridad (CSV) o importar datos antiguos desde otro dispositivo.",
+    close: "Cerrar",
+    accountSettings: "Configuración de Cuenta",
+    deleteAccount: "Eliminar Cuenta y Datos",
+    deleteAccountConfirm: "⚠️ ¿ESTÁS SEGURO?\n\nEsta acción borrará PERMANENTEMENTE todos tus datos de la nube. No se puede deshacer.\n\n¿Quieres continuar?",
+    deleteAccountSuccess: "Tu cuenta y tus datos han sido eliminados correctamente."
   },
   en: {
     months: [
@@ -94,7 +113,26 @@ export const TRANSLATIONS = {
     yearNotFound: "Year not found",
     histDailyAvg: "Historical Daily Avg",
     importSuccess: "Data imported successfully",
-    importError: "Error reading CSV file"
+    importError: "Error reading CSV file",
+    guestMode: "Continue as Guest",
+    guestModeDesc: "Data is saved only on this device.",
+    help: "Help & Documentation",
+    helpTitle: "User Guide",
+    helpIntro: "Welcome to Master Paleo Analytics. Here is a quick guide to get the most out of your training tracking.",
+    helpGuestVsUserTitle: "Guest vs Registered",
+    helpGuest: "Guest: Data is saved in your browser's memory. If you clear cache or switch phones, data is lost (use Export CSV to backup).",
+    helpUser: "Registered: Data is securely saved in the cloud. You can access it from any device (PC, phone, tablet) and everything stays synced.",
+    helpDataEntryTitle: "Entering Data",
+    helpDataEntry: "Go to the 'Data Entry' tab. Use the 'Daily Log' form to add specific workouts with dates and notes. These automatically add up to the corresponding week.",
+    helpGridTitle: "Manual Editing",
+    helpGrid: "You can also directly edit the cells in the annual grid. Tap any number to modify it.",
+    helpCsvTitle: "Import / Export",
+    helpCsv: "Use the buttons in the top bar to download a backup (CSV) or import old data from another device.",
+    close: "Close",
+    accountSettings: "Account Settings",
+    deleteAccount: "Delete Account & Data",
+    deleteAccountConfirm: "⚠️ ARE YOU SURE?\n\nThis action will PERMANENTLY delete all your data from the cloud. This cannot be undone.\n\nDo you want to continue?",
+    deleteAccountSuccess: "Your account and data have been successfully deleted."
   }
 };
 

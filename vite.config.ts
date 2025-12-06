@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // Change to 'prompt' to let user control the update via the ReloadPrompt component
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Master Paleo Analytics',
@@ -34,6 +34,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/cdn-icons-png\.flaticon\.com\/.*/i,
@@ -53,7 +56,7 @@ export default defineConfig({
       }
     })
   ],
-  base: './', // Important for GitHub Pages or relative hosting
+  base: './', 
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

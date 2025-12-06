@@ -5,7 +5,8 @@ import { YearData, LogEntry } from './types';
 import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
-import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, CloudOff, RefreshCw, Lock, UserPlus, LogOut } from 'lucide-react';
+import HelpModal from './components/HelpModal';
+import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, CloudOff, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert } from 'lucide-react';
 import { supabase, isConfigured } from './supabaseClient';
 
 // Custom Icon for Piragua (Kayak)
@@ -46,6 +47,7 @@ function App() {
   const [activityLog, setActivityLog] = useState<LogEntry[]>([]);
   const [darkMode, setDarkMode] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const t = TRANSLATIONS[lang];
 
@@ -126,9 +128,20 @@ function App() {
              setActivityLog(parsedLog);
         }
       } else {
-        // First time user? Create empty row
-        // RLS Policy "Insertar mis datos" will allow this because id matches auth.uid()
-        const initialData = parseCSVData(INITIAL_CSV_DATA);
+        // BLANK SLATE FOR NEW USERS
+        // Instead of loading the historical CSV, we create a fresh empty year for the current year.
+        const currentYear = new Date().getFullYear();
+        const emptyYearData: YearData = {
+          year: currentYear,
+          total: 0,
+          months: MONTH_NAMES.map(name => ({
+            name: name,
+            total: 0,
+            weeks: Array.from({ length: 5 }, (_, i) => ({ weekNum: i + 1, value: 0 }))
+          }))
+        };
+        const initialData = [emptyYearData];
+
         const { error: insertError } = await supabase
           .from('user_data')
           .insert([{ 
@@ -154,7 +167,7 @@ function App() {
   const enterOfflineMode = () => {
     setIsLoggedIn(true);
     setIsOfflineMode(true);
-    setUserEmail('Local User');
+    setUserEmail('Invitado');
     // Load from local storage or defaults
     const localData = localStorage.getItem('paleoData');
     const localLog = localStorage.getItem('paleoLog');
@@ -199,6 +212,33 @@ function App() {
       console.error("Error syncing:", err);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm(t.deleteAccountConfirm)) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Delete data row
+        const { error } = await supabase
+          .from('user_data')
+          .delete()
+          .eq('id', user.id);
+        
+        if (error) throw error;
+      }
+
+      await supabase.auth.signOut();
+      setIsLoggedIn(false);
+      setUserEmail('');
+      setPassword('');
+      setAuthMode('login');
+      alert(t.deleteAccountSuccess);
+    } catch (err: any) {
+      console.error("Delete Error:", err);
+      alert("Error: " + err.message);
     }
   };
 
@@ -448,9 +488,10 @@ function App() {
                     onClick={enterOfflineMode}
                     className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
-                    <CloudOff size={20} />
-                    Entrar en Modo Local
+                    <User size={20} className="text-slate-500" />
+                    {t.guestMode}
                   </button>
+                  <p className="text-[10px] text-slate-400 mt-2">{t.guestModeDesc}</p>
 
                   <p className="text-xs text-slate-400 mt-6 text-center">
                       {!isConfigured() 
@@ -471,6 +512,9 @@ function App() {
     <div className={darkMode ? 'dark' : ''}>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-20 transition-colors duration-300">
         
+        {/* Help Modal */}
+        <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} lang={lang} />
+
         {/* Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 transition-colors duration-300">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -483,7 +527,7 @@ function App() {
                     <h1 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Master Paleo</h1>
                     <div className="flex items-center gap-1 text-xs font-medium">
                         {isOfflineMode ? (
-                           <span className="text-slate-500 flex items-center gap-1"><CloudOff size={10} /> Local</span>
+                           <span className="text-orange-500 flex items-center gap-1"><User size={10} /> Invitado</span>
                         ) : (
                            <div className="flex items-center gap-2">
                                <span className="text-green-500 flex items-center gap-1"><Lock size={10} /> {userEmail}</span>
@@ -528,6 +572,14 @@ function App() {
                   <button onClick={() => setLang('es')} className={`px-3 py-1 rounded text-xs font-bold transition-all ${lang === 'es' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>ES</button>
                   <button onClick={() => setLang('en')} className={`px-3 py-1 rounded text-xs font-bold transition-all ${lang === 'en' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>EN</button>
                 </div>
+
+                 <button
+                  onClick={() => setShowHelp(true)}
+                  className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  title={t.help}
+                >
+                  <HelpCircle size={20} />
+                </button>
 
                  <button
                   onClick={() => setDarkMode(!darkMode)}
@@ -638,6 +690,22 @@ function App() {
                         )}
                       </div>
                     </div>
+
+                    {!isOfflineMode && isLoggedIn && (
+                       <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl shadow-sm border border-red-100 dark:border-red-900/30">
+                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-red-100 dark:border-red-900/30">
+                             <ShieldAlert size={18} className="text-red-500" />
+                             <h3 className="font-bold text-red-700 dark:text-red-400">{t.accountSettings}</h3>
+                          </div>
+                          <button 
+                            onClick={handleDeleteAccount}
+                            className="w-full bg-white dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 font-bold py-2 rounded-lg border border-red-200 dark:border-red-800 transition-colors flex items-center justify-center gap-2 text-sm"
+                          >
+                            <Trash2 size={16} />
+                            {t.deleteAccount}
+                          </button>
+                       </div>
+                    )}
                   </div>
 
                   <div className="lg:col-span-2">
