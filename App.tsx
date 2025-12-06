@@ -6,7 +6,7 @@ import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
 import HelpModal from './components/HelpModal';
-import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, CloudOff, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, CloudOff, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert, Smartphone } from 'lucide-react';
 import { supabase, isConfigured } from './supabaseClient';
 
 // Custom Icon for Piragua (Kayak)
@@ -48,8 +48,50 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isIOS, setIsIOS] = useState(false);
 
   const t = TRANSLATIONS[lang];
+
+  // --- INSTALLATION LOGIC ---
+  useEffect(() => {
+    // Detect Android/Desktop install capability
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Detect iOS
+    const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(isIosDevice);
+
+    // Check Dark Mode preference
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setDarkMode(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else if (isIOS) {
+      alert("Para instalar en iOS:\n1. Pulsa el botón 'Compartir' (cuadrado con flecha)\n2. Selecciona 'Añadir a pantalla de inicio'");
+    } else {
+      alert("La instalación automática no está disponible. Usa el menú de tu navegador -> Instalar aplicación.");
+    }
+  };
 
   // --- AUTH & DATA LOADING ---
 
@@ -572,6 +614,16 @@ function App() {
                   <button onClick={() => setLang('es')} className={`px-3 py-1 rounded text-xs font-bold transition-all ${lang === 'es' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>ES</button>
                   <button onClick={() => setLang('en')} className={`px-3 py-1 rounded text-xs font-bold transition-all ${lang === 'en' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>EN</button>
                 </div>
+
+                 {(deferredPrompt || isIOS) && (
+                   <button
+                    onClick={handleInstallClick}
+                    className="p-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
+                    title="Instalar App"
+                  >
+                    <Smartphone size={20} />
+                  </button>
+                 )}
 
                  <button
                   onClick={() => setShowHelp(true)}
