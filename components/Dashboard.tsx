@@ -14,7 +14,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   const t = TRANSLATIONS[lang];
 
-  // Sort data descending by year to easily get the most recent ones
+  // Sort data descending by year to easily get the most recent ones for history
   const sortedDataDesc = [...data].sort((a, b) => b.year - a.year);
 
   // Annual Progress: Last 10 years, but displayed in chronological order (ascending)
@@ -41,7 +41,16 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   });
 
   const totalKm = data.reduce((acc, curr) => acc + curr.total, 0);
-  const currentYear = sortedDataDesc[0]; // Most recent year
+
+  // LOGIC FIX: Determine "Current Year"
+  // Prioritize the actual system year (e.g., 2025). 
+  // If not found, fall back to the most recent year available (sortedDataDesc[0]).
+  const currentSystemYear = new Date().getFullYear();
+  let currentYear = data.find(d => d.year === currentSystemYear);
+  
+  if (!currentYear) {
+    currentYear = sortedDataDesc[0]; // Fallback
+  }
   
   const currentYearTotal = currentYear?.total || 0;
 
