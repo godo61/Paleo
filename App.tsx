@@ -61,6 +61,7 @@ function App() {
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      console.log("Install prompt captured");
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -89,7 +90,30 @@ function App() {
     } else if (isIOS) {
       alert("Para instalar en iOS:\n1. Pulsa el botón 'Compartir' (cuadrado con flecha)\n2. Selecciona 'Añadir a pantalla de inicio'");
     } else {
-      alert("La instalación automática no está disponible. Usa el menú de tu navegador -> Instalar aplicación.");
+      alert("La instalación automática no está disponible o la app ya está instalada.\n\nBusca la opción 'Instalar aplicación' en el menú de tu navegador.");
+    }
+  };
+
+  // --- HELPER FOR DEFAULT YEAR ---
+  const setDefaultYear = (dataset: YearData[]) => {
+    if (!dataset || dataset.length === 0) return;
+    const currentYear = new Date().getFullYear();
+    
+    // 1. Try to select Current Year
+    const idx = dataset.findIndex(d => d.year === currentYear);
+    if (idx !== -1) {
+      setSelectedYearIndex(idx);
+      return;
+    }
+    
+    // 2. If not found, try to select the first year that is NOT in the future (<= currentYear)
+    // This skips years like 2026 if they exist but we are in 2025.
+    const validIdx = dataset.findIndex(d => d.year < currentYear);
+    if (validIdx !== -1) {
+      setSelectedYearIndex(validIdx);
+    } else {
+      // 3. Fallback: Select the first available (even if future)
+      setSelectedYearIndex(0);
     }
   };
 
@@ -160,7 +184,10 @@ function App() {
 
       if (dbData) {
         // User exists, load data
-        if (dbData.years_data) setData(dbData.years_data);
+        if (dbData.years_data) {
+          setData(dbData.years_data);
+          setDefaultYear(dbData.years_data);
+        }
         if (dbData.activity_log) {
              const parsedLog = dbData.activity_log.map((entry: any) => ({
                 ...entry,
@@ -195,9 +222,11 @@ function App() {
         
         if (!insertError) {
           setData(initialData);
+          setDefaultYear(initialData);
         } else {
             console.error("Insert error (RLS):", insertError);
             setData(initialData); // Fallback to display data anyway
+            setDefaultYear(initialData);
         }
       }
     } catch (e) {
@@ -215,9 +244,13 @@ function App() {
     const localLog = localStorage.getItem('paleoLog');
     
     if (localData) {
-        setData(JSON.parse(localData));
+        const parsed = JSON.parse(localData);
+        setData(parsed);
+        setDefaultYear(parsed);
     } else {
-        setData(parseCSVData(INITIAL_CSV_DATA));
+        const parsed = parseCSVData(INITIAL_CSV_DATA);
+        setData(parsed);
+        setDefaultYear(parsed);
     }
     
     if (localLog) {
@@ -432,6 +465,7 @@ function App() {
           const parsed = parseCSVData(content);
           if (parsed.length > 0) {
             setData(parsed);
+            setDefaultYear(parsed);
             syncData(parsed, activityLog); // Sync imported data
             alert(t.importSuccess);
           } else {
@@ -615,15 +649,13 @@ function App() {
                   <button onClick={() => setLang('en')} className={`px-3 py-1 rounded text-xs font-bold transition-all ${lang === 'en' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>EN</button>
                 </div>
 
-                 {(deferredPrompt || isIOS) && (
-                   <button
-                    onClick={handleInstallClick}
-                    className="p-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
-                    title="Instalar App"
-                  >
-                    <Smartphone size={20} />
-                  </button>
-                 )}
+                 <button
+                  onClick={handleInstallClick}
+                  className="p-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors border border-blue-200 dark:border-blue-800"
+                  title="Instalar App"
+                >
+                  <Smartphone size={20} />
+                </button>
 
                  <button
                   onClick={() => setShowHelp(true)}
