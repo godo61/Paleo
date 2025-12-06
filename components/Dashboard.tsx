@@ -13,9 +13,14 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   const t = TRANSLATIONS[lang];
+  const currentSystemYear = new Date().getFullYear();
+
+  // FILTER LOGIC: Exclude future years (like 2026) from stats and charts
+  // This prevents empty future years created by mistake from skewing averages and showing up in charts.
+  const validData = data.filter(d => d.year <= currentSystemYear);
 
   // Sort data descending by year to easily get the most recent ones for history
-  const sortedDataDesc = [...data].sort((a, b) => b.year - a.year);
+  const sortedDataDesc = [...validData].sort((a, b) => b.year - a.year);
 
   // Annual Progress: Last 10 years, but displayed in chronological order (ascending)
   const annualData = sortedDataDesc
@@ -40,26 +45,24 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
     return point;
   });
 
-  const totalKm = data.reduce((acc, curr) => acc + curr.total, 0);
+  const totalKm = validData.reduce((acc, curr) => acc + curr.total, 0);
 
   // LOGIC FIX: Determine "Current Year"
-  // Prioritize the actual system year (e.g., 2025). 
-  // If not found, fall back to the most recent year available (sortedDataDesc[0]).
-  const currentSystemYear = new Date().getFullYear();
-  let currentYear = data.find(d => d.year === currentSystemYear);
+  // We prioritize the actual system year. Since we filtered validData, we look there.
+  let currentYear = validData.find(d => d.year === currentSystemYear);
   
-  if (!currentYear) {
-    currentYear = sortedDataDesc[0]; // Fallback
+  if (!currentYear && validData.length > 0) {
+    currentYear = validData[0]; // Fallback to most recent valid year if current is not started yet
   }
   
   const currentYearTotal = currentYear?.total || 0;
 
-  // Calculate All-time Averages
+  // Calculate All-time Averages based on validData only
   // Based on the grid structure: 12 months * 5 weeks = 60 weeks per year
-  const totalWeeks = data.length * 60; 
+  const totalWeeks = validData.length * 60; 
   const weeklyAvgAllTime = totalWeeks > 0 ? totalKm / totalWeeks : 0;
-  const monthlyAvgAllTime = data.length > 0 ? totalKm / (data.length * 12) : 0;
-  const dailyAvgAllTime = data.length > 0 ? totalKm / (data.length * 365) : 0;
+  const monthlyAvgAllTime = validData.length > 0 ? totalKm / (validData.length * 12) : 0;
+  const dailyAvgAllTime = validData.length > 0 ? totalKm / (validData.length * 365) : 0;
 
   // Colors for the lines
   const colors = [
@@ -85,19 +88,19 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard 
           title={t.allTimeDistance} 
-          value={`${totalKm.toLocaleString()} km`} 
+          value={`${totalKm.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`} 
           icon={<Trophy className="w-5 h-5" />} 
         />
         <StatCard 
-          title={`${t.currentTotal} (${currentYear?.year || ''})`} 
-          value={`${currentYearTotal.toLocaleString()} km`} 
+          title={`${t.currentTotal} (${currentYear?.year || currentSystemYear})`} 
+          value={`${currentYearTotal.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`} 
           icon={<Zap className="w-5 h-5" />}
           trend={t.keepPushing}
           trendUp={true}
         />
         <StatCard 
           title={t.activeYears} 
-          value={data.length} 
+          value={validData.length} 
           icon={<Calendar className="w-5 h-5" />} 
         />
          <StatCard 
