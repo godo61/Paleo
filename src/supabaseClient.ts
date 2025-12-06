@@ -1,1 +1,0 @@
-// File intentionally left empty. Use the supabaseClient.ts in the root directory.

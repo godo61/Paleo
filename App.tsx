@@ -5,7 +5,7 @@ import { YearData, LogEntry } from './types';
 import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
-import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, Cloud, LogIn, CloudOff, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, CloudOff, RefreshCw, Lock, UserPlus, LogOut } from 'lucide-react';
 import { supabase, isConfigured } from './supabaseClient';
 
 // Custom Icon for Piragua (Kayak)
@@ -32,9 +32,11 @@ const KayakIcon = ({ size = 24, className = "" }: { size?: number, className?: s
 function App() {
   // Auth State
   const [userEmail, setUserEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
   // App State
   const [data, setData] = useState<YearData[]>([]);
@@ -49,28 +51,70 @@ function App() {
 
   // --- AUTH & DATA LOADING ---
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!isConfigured()) {
-      alert("⚠️ FALTAN LAS CLAVES DE SUPABASE\n\nAbre el archivo 'supabaseClient.ts' y pega tus claves reales (URL y Key) para activar la nube.\n\nMientras tanto, usa el botón 'Modo Local'.");
+      alert("⚠️ FALTAN LAS CLAVES DE SUPABASE\n\nEdita 'supabaseClient.ts' con tus claves reales.");
+      return;
+    }
+    if (!userEmail || !password) {
+      alert("Por favor introduce email y contraseña");
       return;
     }
 
-    if (!userEmail) return;
     setAuthLoading(true);
-    
+
     try {
+      let authResponse;
+      
+      if (authMode === 'signup') {
+        // REGISTER
+        authResponse = await supabase.auth.signUp({
+          email: userEmail,
+          password: password,
+        });
+      } else {
+        // LOGIN
+        authResponse = await supabase.auth.signInWithPassword({
+          email: userEmail,
+          password: password,
+        });
+      }
+
+      if (authResponse.error) {
+        throw authResponse.error;
+      }
+
+      const user = authResponse.data.user;
+      if (!user) throw new Error("No user returned");
+
+      // Load User Data
+      await loadUserData(user.id, user.email || userEmail);
+      
+      setIsLoggedIn(true);
+      setIsOfflineMode(false);
+      localStorage.setItem('paleoUser', userEmail); 
+
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      alert(err.message || "Error de autenticación. Revisa tus credenciales.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const loadUserData = async (userId: string, email: string) => {
+    try {
+      // Fetch data using RLS (Row Level Security)
+      // We explicitly select using the authenticated session
       const { data: dbData, error } = await supabase
         .from('user_data')
         .select('*')
-        .eq('user_email', userEmail)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
-        console.error("Error fetching data:", error);
-        alert("Error de conexión con Supabase. Revisa tus claves.");
-      } else if (dbData) {
+      if (error) throw error;
+
+      if (dbData) {
         // User exists, load data
         if (dbData.years_data) setData(dbData.years_data);
         if (dbData.activity_log) {
@@ -82,33 +126,35 @@ function App() {
              setActivityLog(parsedLog);
         }
       } else {
-        // User doesn't exist, create new record with defaults
+        // First time user? Create empty row
+        // RLS Policy "Insertar mis datos" will allow this because id matches auth.uid()
         const initialData = parseCSVData(INITIAL_CSV_DATA);
         const { error: insertError } = await supabase
           .from('user_data')
-          .insert([{ user_email: userEmail, years_data: initialData, activity_log: [] }]);
+          .insert([{ 
+            id: userId,
+            user_email: email, 
+            years_data: initialData, 
+            activity_log: [] 
+          }]);
         
         if (!insertError) {
           setData(initialData);
         } else {
-            console.error(insertError);
-            alert("Error creando usuario nuevo. Verifica que la tabla 'user_data' existe en Supabase.");
+            console.error("Insert error (RLS):", insertError);
+            setData(initialData); // Fallback to display data anyway
         }
       }
-      setIsLoggedIn(true);
-      setIsOfflineMode(false);
-      localStorage.setItem('paleoUser', userEmail);
-    } catch (err) {
-      console.error(err);
-      alert("Error iniciando sesión. Revisa la consola.");
-    } finally {
-      setAuthLoading(false);
+    } catch (e) {
+      console.error("Load Data Error:", e);
+      alert("Error cargando datos. Se usará modo local temporalmente.");
     }
   };
 
   const enterOfflineMode = () => {
     setIsLoggedIn(true);
     setIsOfflineMode(true);
+    setUserEmail('Local User');
     // Load from local storage or defaults
     const localData = localStorage.getItem('paleoData');
     const localLog = localStorage.getItem('paleoLog');
@@ -125,8 +171,8 @@ function App() {
                 ...entry,
                 date: new Date(entry.date),
                 timestamp: new Date(entry.timestamp)
-            }));
-            setActivityLog(parsed);
+             }));
+             setActivityLog(parsed);
         } catch (e) {
             setActivityLog([]);
         }
@@ -138,14 +184,17 @@ function App() {
     localStorage.setItem('paleoData', JSON.stringify(newData));
     localStorage.setItem('paleoLog', JSON.stringify(newLog));
 
-    if (isOfflineMode || !isLoggedIn || !userEmail) return;
+    if (isOfflineMode || !isLoggedIn) return;
     
     setIsSyncing(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       await supabase
         .from('user_data')
-        .update({ years_data: newData, activity_log: newLog })
-        .eq('user_email', userEmail);
+        .update({ years_data: newData, activity_log: newLog, updated_at: new Date() })
+        .eq('id', user.id); // RLS allows this
     } catch (err) {
       console.error("Error syncing:", err);
     } finally {
@@ -154,12 +203,14 @@ function App() {
   };
 
   useEffect(() => {
-    // Check for saved session
-    const savedUser = localStorage.getItem('paleoUser');
-    if (savedUser && isConfigured()) {
-      setUserEmail(savedUser);
-      // Auto-login logic could go here, for now we let user click login
-    }
+    // Check if session exists in Supabase (persisted login)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user && isConfigured()) {
+        setUserEmail(session.user.email || '');
+        loadUserData(session.user.id, session.user.email || '');
+        setIsLoggedIn(true);
+      }
+    });
   }, []);
 
   // --- APP LOGIC ---
@@ -256,6 +307,8 @@ function App() {
     yearRecord.total = parseFloat(months.reduce((sum, m) => sum + m.total, 0).toFixed(2));
     newData[yearIndex] = yearRecord;
 
+    newData[yearIndex] = yearRecord;
+
     setData(newData);
     
     // Sync both
@@ -312,6 +365,14 @@ function App() {
     event.target.value = '';
   };
 
+  const handleLogout = async () => {
+      await supabase.auth.signOut();
+      setIsLoggedIn(false);
+      setUserEmail('');
+      setPassword('');
+      setAuthMode('login');
+  };
+
   // --- LOGIN SCREEN ---
   if (!isLoggedIn) {
       return (
@@ -323,15 +384,40 @@ function App() {
                   <h1 className="text-2xl font-bold text-slate-800 mb-2">Master Paleo Analytics</h1>
                   <p className="text-slate-500 mb-6">Gestiona tus entrenamientos</p>
                   
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="flex bg-slate-100 p-1 rounded-lg mb-6">
+                      <button 
+                        onClick={() => setAuthMode('login')}
+                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${authMode === 'login' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                      >
+                        Entrar
+                      </button>
+                      <button 
+                        onClick={() => setAuthMode('signup')}
+                        className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${authMode === 'signup' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                      >
+                        Registrarse
+                      </button>
+                  </div>
+
+                  <form onSubmit={handleAuth} className="space-y-4">
                       <div className="text-left">
-                        <label className="text-xs font-bold text-slate-400 uppercase">Sincronización Cloud (Opcional)</label>
+                        <label className="text-xs font-bold text-slate-400 uppercase">Email</label>
                         <input 
-                          type="text" 
-                          placeholder="Nombre de Usuario (inventado, ej: godo61)" 
+                          type="email" 
+                          required
                           className="w-full mt-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                           value={userEmail}
                           onChange={(e) => setUserEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="text-left">
+                        <label className="text-xs font-bold text-slate-400 uppercase">Contraseña</label>
+                        <input 
+                          type="password" 
+                          required
+                          className="w-full mt-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
                         />
                       </div>
                       
@@ -340,10 +426,10 @@ function App() {
                         disabled={authLoading}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
-                          {authLoading ? 'Conectando...' : (
+                          {authLoading ? 'Procesando...' : (
                               <>
-                                <LogIn size={20} />
-                                Entrar / Sincronizar
+                                {authMode === 'login' ? <LogIn size={20} /> : <UserPlus size={20} />}
+                                {authMode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
                               </>
                           )}
                       </button>
@@ -369,7 +455,9 @@ function App() {
                   <p className="text-xs text-slate-400 mt-6 text-center">
                       {!isConfigured() 
                         ? "⚠️ Nube no configurada. Edita supabaseClient.ts para activarla." 
-                        : "El Modo Local guarda datos solo en este dispositivo."}
+                        : authMode === 'signup' 
+                            ? "Al registrarte aceptas guardar tus datos en la nube."
+                            : "Tus datos están seguros y encriptados."}
                   </p>
               </div>
           </div>
@@ -398,10 +486,10 @@ function App() {
                            <span className="text-slate-500 flex items-center gap-1"><CloudOff size={10} /> Local</span>
                         ) : (
                            <div className="flex items-center gap-2">
-                               <span className="text-green-500 flex items-center gap-1"><Cloud size={10} /> {userEmail}</span>
+                               <span className="text-green-500 flex items-center gap-1"><Lock size={10} /> {userEmail}</span>
                                {isSyncing && (
                                    <span className="flex items-center gap-1 text-blue-500 animate-pulse">
-                                       <RefreshCw size={10} className="animate-spin" /> Sincronizando...
+                                       <RefreshCw size={10} className="animate-spin" />
                                    </span>
                                )}
                            </div>
@@ -456,6 +544,9 @@ function App() {
                     <button onClick={handleExport} className="p-2 text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 transition-colors" title={t.exportCSV}>
                       <Download size={18} />
                     </button>
+                     <button onClick={handleLogout} className="p-2 text-red-500 dark:text-red-400 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 transition-colors" title="Cerrar Sesión">
+                      <LogOut size={18} />
+                    </button>
                 </div>
               </div>
             </div>
@@ -476,9 +567,9 @@ function App() {
               <Upload size={20} className="mb-1" />
               CSV
             </button>
-            <button onClick={handleExport} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <Download size={20} className="mb-1" />
-              CSV
+             <button onClick={handleLogout} className="flex flex-col items-center p-2 text-xs font-medium text-red-500 dark:text-red-400">
+              <LogOut size={20} className="mb-1" />
+              Salir
             </button>
         </div>
 
