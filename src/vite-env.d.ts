@@ -1,3 +1,11 @@
-// References to vite/client and vite-plugin-pwa/client are commented out to resolve "Cannot find type definition" errors.
 // /// <reference types="vite/client" />
 // /// <reference types="vite-plugin-pwa/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_SUPABASE_URL: string
+  readonly VITE_SUPABASE_ANON_KEY: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}
