@@ -8,7 +8,7 @@ import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
 import HelpModal from './components/HelpModal';
 import HistoryModal from './components/HistoryModal';
-import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert, Smartphone, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert, Smartphone, ArrowRight, Share2 } from 'lucide-react';
 import { supabase, isConfigured } from './supabaseClient';
 
 // Custom Icon for Piragua (Kayak)
@@ -416,11 +416,33 @@ function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'row_master_data.csv');
+    link.setAttribute('download', 'master_paleo_data.csv');
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleShareExport = async () => {
+    const csvContent = exportToCSV(data);
+    const file = new File([csvContent], "master_paleo_data.csv", { type: "text/csv" });
+
+    // Check if Web Share API supports files
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          title: 'Master Paleo Data',
+          text: 'Aquí tienes mis datos de entrenamiento exportados desde Master Paleo Analytics.',
+          files: [file],
+        });
+      } catch (err) {
+        console.log('Share was cancelled or failed', err);
+      }
+    } else {
+      // Fallback for browsers that don't support file sharing directly (like some desktop browsers)
+      handleExport();
+      alert(t.shareFallback);
+    }
   };
 
   const handleImportClick = () => {
@@ -663,6 +685,9 @@ function App() {
                     <button onClick={handleExport} className="p-2 text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 transition-colors" title={t.exportCSV}>
                       <Download size={18} />
                     </button>
+                    <button onClick={handleShareExport} className="p-2 text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 transition-colors" title={t.shareCSV}>
+                      <Share2 size={18} />
+                    </button>
                      <button onClick={handleLogout} className="p-2 text-red-500 dark:text-red-400 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 transition-colors" title="Cerrar Sesión">
                       <LogOut size={18} />
                     </button>
@@ -682,13 +707,13 @@ function App() {
               <FileSpreadsheet size={20} className="mb-1" />
               {t.dataEntry}
             </button>
+             <button onClick={handleShareExport} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <Share2 size={20} className="mb-1" />
+              Share
+            </button>
              <button onClick={handleImportClick} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
               <Upload size={20} className="mb-1" />
               Importar
-            </button>
-            <button onClick={handleExport} className="flex flex-col items-center p-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-              <Download size={20} className="mb-1" />
-              Exportar
             </button>
              <button onClick={handleLogout} className="flex flex-col items-center p-2 text-xs font-medium text-red-500 dark:text-red-400">
               <LogOut size={20} className="mb-1" />
