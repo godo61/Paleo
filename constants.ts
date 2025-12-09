@@ -1,3 +1,4 @@
+
 export const MONTH_NAMES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio", 
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
@@ -38,6 +39,9 @@ export const TRANSLATIONS = {
     selectYear: "Seleccionar Año",
     dataManagement: "Gestión de Datos",
     recentActivity: "Actividad Reciente",
+    viewFullHistory: "Ver Historial Completo",
+    activityHistory: "Historial de Actividad",
+    searchLogs: "Buscar en notas...",
     noActivity: "No hay actividad registrada en esta sesión.",
     kilometers: "Kilómetros",
     keepPushing: "¡Sigue empujando!",
@@ -105,6 +109,9 @@ export const TRANSLATIONS = {
     selectYear: "Select Year",
     dataManagement: "Data Management",
     recentActivity: "Recent Activity",
+    viewFullHistory: "View Full History",
+    activityHistory: "Activity History",
+    searchLogs: "Search notes...",
     noActivity: "No activity recorded in this session.",
     kilometers: "Kilometers",
     keepPushing: "Keep pushing!",

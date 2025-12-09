@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { parseCSVData, exportToCSV } from './utils/dataProcessor';
 import { TRANSLATIONS, MONTH_NAMES } from './constants';
@@ -6,7 +7,8 @@ import Dashboard from './components/Dashboard';
 import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
 import HelpModal from './components/HelpModal';
-import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert, Smartphone } from 'lucide-react';
+import HistoryModal from './components/HistoryModal';
+import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, RefreshCw, Lock, UserPlus, LogOut, User, HelpCircle, Trash2, ShieldAlert, Smartphone, ArrowRight } from 'lucide-react';
 import { supabase, isConfigured } from './supabaseClient';
 
 // Custom Icon for Piragua (Kayak)
@@ -48,6 +50,7 @@ function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -559,6 +562,9 @@ function App() {
         
         {/* Help Modal */}
         <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} lang={lang} />
+
+        {/* History Modal */}
+        <HistoryModal isOpen={showHistory} onClose={() => setShowHistory(false)} logs={activityLog} lang={lang} />
         
         {/* Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 transition-colors duration-300">
@@ -624,6 +630,14 @@ function App() {
                   title="Instalar App"
                 >
                   <Smartphone size={20} />
+                </button>
+
+                 <button
+                  onClick={() => setShowHistory(true)}
+                  className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  title={t.activityHistory}
+                >
+                  <History size={20} />
                 </button>
 
                  <button
@@ -720,11 +734,11 @@ function App() {
                         <History size={18} className="text-slate-400" />
                         <h3 className="font-bold text-slate-700 dark:text-slate-200">{t.recentActivity}</h3>
                       </div>
-                      <div className="space-y-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+                      <div className="space-y-3 max-h-60 overflow-y-auto pr-1 custom-scrollbar mb-4">
                         {activityLog.length === 0 ? (
                           <p className="text-sm text-slate-400 italic text-center py-4">{t.noActivity}</p>
                         ) : (
-                          activityLog.map((log) => (
+                          activityLog.slice(0, 10).map((log) => (
                             <div key={log.id} className="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                               <div className="flex justify-between items-start">
                                 <div>
@@ -746,11 +760,17 @@ function App() {
                           ))
                         )}
                       </div>
+                      <button 
+                        onClick={() => setShowHistory(true)}
+                        className="w-full py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1"
+                      >
+                        {t.viewFullHistory} <ArrowRight size={14} />
+                      </button>
                     </div>
 
                     {!isOfflineMode && isLoggedIn && (
                        <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl shadow-sm border border-red-100 dark:border-red-900/30">
-                          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-red-100 dark:border-red-900/30">
+                          <div className="flex items-center gap-2 mb-3 pb-2 border-red-100 dark:border-red-900/30">
                              <ShieldAlert size={18} className="text-red-500" />
                              <h3 className="font-bold text-red-700 dark:text-red-400">{t.accountSettings}</h3>
                           </div>
