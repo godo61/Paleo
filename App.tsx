@@ -48,7 +48,13 @@ function App() {
   const [selectedYearIndex, setSelectedYearIndex] = useState(0);
   const [lang, setLang] = useState<'es' | 'en'>('es');
   const [activityLog, setActivityLog] = useState<LogEntry[]>([]);
-  const [darkMode, setDarkMode] = useState(false);
+  
+  // CAMBIO: Por defecto TRUE (Oscuro) o lo que haya guardado el usuario
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('paleo_theme');
+    return saved ? saved === 'dark' : true; 
+  });
+  
   const [isSyncing, setIsSyncing] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -58,13 +64,20 @@ function App() {
 
   const t = TRANSLATIONS[lang];
 
+  // CAMBIO: Guardar preferencia de tema cuando cambie
+  useEffect(() => {
+    localStorage.setItem('paleo_theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
+
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => { e.preventDefault(); setDeferredPrompt(e); };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     const isIosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIosDevice);
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { setDarkMode(true); }
     
+    // NOTA: He quitado la comprobación de 'matchMedia' para forzar el modo oscuro por defecto
+    // a menos que el usuario lo cambie manualmente.
+
     try {
         supabase.auth.getSession().then(({ data: { session } }) => {
           if (session && session.user && isConfigured()) {
@@ -195,6 +208,7 @@ function App() {
   const handleClearLocalData = () => {
     if (confirm("¿Borrar datos locales?")) {
       localStorage.removeItem('paleoData'); localStorage.removeItem('paleoLog'); localStorage.removeItem('paleoUser');
+      localStorage.removeItem('paleo_theme'); // Limpiar tema también
       const currentYear = new Date().getFullYear();
       const emptyYearData: YearData = { year: currentYear, total: 0, months: MONTH_NAMES.map(name => ({ name, total: 0, weeks: Array.from({ length: 5 }, (_, i) => ({ weekNum: i + 1, value: 0 })) })) };
       setData([emptyYearData]); setActivityLog([]); setDefaultYear([emptyYearData]);
