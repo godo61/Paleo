@@ -7,10 +7,8 @@ import YearGrid from './components/YearGrid';
 import DailyEntryForm from './components/DailyEntryForm';
 import HelpModal from './components/HelpModal';
 import HistoryModal from './components/HistoryModal';
-// Añadida la 'Search' a los iconos importados
 import { LayoutDashboard, FileSpreadsheet, Download, Upload, History, Sun, Moon, LogIn, Lock, User, Trash2, Smartphone, ArrowRight, Share2, Calendar, HelpCircle, LogOut, Search } from 'lucide-react';
 
-// --- IMPORTACIÓN CORRECTA (RAÍZ) ---
 import { supabase, isConfigured } from './supabaseClient';
 
 // --- COMPONENTES AUXILIARES ---
@@ -24,7 +22,6 @@ const KayakIcon = ({ size = 24, className = "" }: { size?: number, className?: s
   </svg>
 );
 
-// GlassCard
 const GlassCard = ({ children, className = "", noHover = false }: { children: React.ReactNode, className?: string, noHover?: boolean }) => (
   <div className={`group relative bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-xl border border-slate-200 dark:border-white/10 shadow-xl transition-all duration-300 overflow-hidden ${className} ${!noHover ? 'hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/5 dark:hover:shadow-blue-900/10' : ''}`}>
     {!noHover && (
@@ -276,6 +273,8 @@ function App() {
     link.href = url; link.download = 'master_paleo_data.csv';
     link.click();
   };
+  
+  // --- FUNCIÓN DE COMPARTIR ORIGINAL ---
   const handleShareExport = async () => { 
     const csvContent = exportToCSV(data);
     const file = new File([csvContent], "master_paleo_data.csv", { type: "text/csv" });
@@ -283,6 +282,7 @@ function App() {
       try { await navigator.share({ title: 'Master Paleo Data', files: [file] }); } catch (err) {}
     } else { handleExport(); alert(t.shareFallback); }
   };
+  
   const handleImportClick = () => document.getElementById('csvInput')?.click();
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -365,12 +365,12 @@ function App() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               
-              {/* Logo y Usuario */}
-              <div className="flex items-center gap-3">
+              {/* Logo y Usuario - Se encoge si hace falta */}
+              <div className="flex items-center gap-3 flex-shrink-0">
                 <div className="bg-gradient-to-br from-blue-600 to-blue-500 p-2 rounded-lg text-white shadow-lg shadow-blue-500/20">
                   <KayakIcon size={24} />
                 </div>
-                <div className="leading-tight">
+                <div className="leading-tight hidden xs:block">
                     <h1 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">Master Paleo</h1>
                     <div className="flex items-center gap-1 text-xs font-medium">
                         {isOfflineMode ? <span className="text-orange-500 flex items-center gap-1"><User size={10} /> Invitado</span> : <span className="text-green-500 flex items-center gap-1"><Lock size={10} /> {userEmail}</span>}
@@ -378,29 +378,31 @@ function App() {
                 </div>
               </div>
 
-              {/* Barra de Herramientas Completa */}
-              <div className="flex items-center gap-4">
+              {/* Barra de Herramientas Completa SCROLLABLE */}
+              <div className="flex items-center gap-3 overflow-x-auto pb-1 pl-2 scrollbar-hide mask-linear">
                 
                 {/* Tabs Tablero / Entrada */}
-                <div className="hidden md:flex gap-2 bg-slate-100/50 dark:bg-slate-700/50 p-1 rounded-lg backdrop-blur-sm">
+                <div className="hidden md:flex gap-2 bg-slate-100/50 dark:bg-slate-700/50 p-1 rounded-lg backdrop-blur-sm flex-shrink-0">
                   <button onClick={() => setActiveTab('dashboard')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'}`}><LayoutDashboard size={18} /> {t.dashboard}</button>
                   <button onClick={() => setActiveTab('manage')} className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'manage' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'}`}><FileSpreadsheet size={18} /> {t.dataEntry}</button>
                 </div>
 
                 {/* Idioma */}
-                <div className="flex gap-1 bg-slate-100/50 dark:bg-slate-700/50 p-1 rounded-lg backdrop-blur-sm">
+                <div className="flex gap-1 bg-slate-100/50 dark:bg-slate-700/50 p-1 rounded-lg backdrop-blur-sm flex-shrink-0">
                   <button onClick={() => setLang('es')} className={`px-3 py-1 rounded text-xs font-bold transition-all ${lang === 'es' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>ES</button>
                   <button onClick={() => setLang('en')} className={`px-3 py-1 rounded text-xs font-bold transition-all ${lang === 'en' ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-blue-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>EN</button>
                 </div>
 
                 {/* Botones de Acción Extra */}
-                <button onClick={handleInstallClick} className="p-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 dark:border-blue-800" title="Instalar App"><Smartphone size={20} /></button>
-                <button onClick={() => setShowHistory(true)} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title={t.activityHistory}><History size={20} /></button>
-                <button onClick={() => setShowHelp(true)} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title={t.help}><HelpCircle size={20} /></button>
-                <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">{darkMode ? <Sun size={20} /> : <Moon size={20} />}</button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <button onClick={handleInstallClick} className="p-2 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200 dark:border-blue-800" title="Instalar App"><Smartphone size={20} /></button>
+                    <button onClick={() => setShowHistory(true)} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title={t.activityHistory}><History size={20} /></button>
+                    <button onClick={() => setShowHelp(true)} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors" title={t.help}><HelpCircle size={20} /></button>
+                    <button onClick={() => setDarkMode(!darkMode)} className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">{darkMode ? <Sun size={20} /> : <Moon size={20} />}</button>
+                </div>
                 
                 {/* Import/Export/Logout */}
-                <div className="hidden md:flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                    <input type="file" id="csvInput" accept=".csv" className="hidden" onChange={handleFileChange} />
                     <button onClick={handleImportClick} className="p-2 text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 transition-colors" title={t.importCSV}><Upload size={18} /></button>
                     <button onClick={handleExport} className="p-2 text-slate-600 dark:text-slate-200 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 transition-colors" title={t.exportCSV}><Download size={18} /></button>
