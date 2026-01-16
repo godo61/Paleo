@@ -6,9 +6,10 @@ import {
 } from 'recharts';
 import { TrendingUp, Calendar, Trophy, Activity, Zap, Calculator } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
+import { calculatePace } from '../utils/dataProcessor';
 
-// --- COMPONENTE DE TARJETA ESTILO FUELMASTER (INTERACTIVO) ---
-interface FuelCardProps {
+// --- COMPONENTE STATCARD (CORREGIDO) ---
+interface StatCardProps {
   title: string;
   value: string;
   icon: React.ElementType;
@@ -16,9 +17,15 @@ interface FuelCardProps {
   color?: "blue" | "green" | "orange" | "purple" | "red";
   subtext?: string;
   subtextColor?: string;
+  paceValue?: number;     
+  historicalAvg?: number; 
+  unit?: string;          
 }
 
-const FuelCard: React.FC<FuelCardProps> = ({ title, value, icon: Icon, trendData, color = "blue", subtext, subtextColor }) => {
+const StatCard: React.FC<StatCardProps> = ({ 
+  title, value, icon: Icon, trendData, color = "blue", 
+  subtext, subtextColor, paceValue, historicalAvg, unit 
+}) => {
   const colors = {
     blue:   { stroke: "#3b82f6", fill: "#3b82f6", bg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20" },
     green:  { stroke: "#22c55e", fill: "#22c55e", bg: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20" },
@@ -28,29 +35,56 @@ const FuelCard: React.FC<FuelCardProps> = ({ title, value, icon: Icon, trendData
   };
   const activeColor = colors[color];
 
+  // Lógica de Semáforo
+  let paceElement = null;
+  if (paceValue !== undefined && historicalAvg !== undefined && historicalAvg > 0) {
+    const diff = paceValue - historicalAvg;
+    const percent = (diff / historicalAvg) * 100;
+    const isPositive = diff >= 0;
+    const sign = isPositive ? "+" : "";
+    const statusColor = isPositive ? "text-green-500" : "text-red-500"; 
+    const dot = isPositive ? "🟢" : "🔴";
+    
+    paceElement = (
+      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-white/5 relative z-20">
+        <p className={`text-xs font-bold ${statusColor} flex items-center gap-1`}>
+          {dot} Ritmo actual: {paceValue.toFixed(1)} {unit}
+        </p>
+        <p className="text-[10px] text-slate-400 font-medium ml-5">
+           ({sign}{percent.toFixed(0)}% vs histórica)
+        </p>
+      </div>
+    );
+  } else if (subtext) {
+    paceElement = (
+      <p className={`text-xs font-bold mt-1 relative z-20 ${subtextColor || 'text-slate-400 dark:text-slate-500'}`}>{subtext}</p>
+    );
+  }
+
   return (
-    <div className="group relative bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-900/10 overflow-hidden flex flex-col justify-between h-32 transition-all duration-300 hover:-translate-y-1">
+    <div className="group relative bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-900/10 overflow-hidden flex flex-col justify-between min-h-[140px] transition-all duration-300 hover:-translate-y-1">
       
-      {/* Efecto de Brillo/Destello al pasar el ratón */}
+      {/* Efecto de Brillo */}
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-      {/* Cabecera */}
-      <div className="flex justify-between items-start relative z-10">
-        <div>
-          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider transition-colors">{title}</p>
-          <h3 className="text-2xl font-bold text-slate-800 dark:text-white mt-1">{value}</h3>
-          {subtext && (
-             <p className={`text-xs font-bold mt-1 ${subtextColor || 'text-slate-400 dark:text-slate-500'}`}>{subtext}</p>
-          )}
+      {/* Cabecera y Contenido */}
+      <div className="relative z-10 flex flex-col h-full justify-between">
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider transition-colors">{title}</p>
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white mt-1">{value}</h3>
+          </div>
+          <div className={`p-2 rounded-lg border ${activeColor.bg} transition-transform duration-300 group-hover:scale-110 shadow-sm`}>
+            <Icon size={20} />
+          </div>
         </div>
-        <div className={`p-2 rounded-lg border ${activeColor.bg} transition-transform duration-300 group-hover:scale-110 shadow-sm`}>
-          <Icon size={20} />
-        </div>
+        
+        {paceElement}
       </div>
 
-      {/* Gráfico Sparkline */}
+      {/* Gráfico Sparkline de fondo (RESTAURADO SIEMPRE QUE HAYA DATOS) */}
       {trendData && trendData.length > 0 && (
-        <div className="absolute bottom-0 right-0 w-36 h-20 opacity-40 group-hover:opacity-100 transition-all duration-500 ease-out origin-bottom-right group-hover:scale-110 pointer-events-none">
+        <div className="absolute bottom-0 right-0 w-36 h-20 opacity-30 group-hover:opacity-80 transition-all duration-500 ease-out origin-bottom-right group-hover:scale-110 pointer-events-none z-0">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trendData}>
               <defs>
@@ -86,7 +120,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   const t = TRANSLATIONS[lang];
   const currentSystemYear = new Date().getFullYear();
 
-  // 1. FILTRADO
+  // 1. FILTRADO INTELIGENTE
+  const historicalData = data.filter(d => d.year < currentSystemYear);
+  const currentYearData = data.find(d => d.year === currentSystemYear);
   const validData = data.filter(d => d.year <= currentSystemYear);
   const sortedDataDesc = [...validData].sort((a, b) => b.year - a.year);
 
@@ -98,24 +134,22 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       .filter(point => point.value > 0);
   }, [validData]);
 
-  const monthlyTrend = trendHistory.slice(-12);
-  const weeklyTrend = trendHistory.slice(-8).map(d => ({ value: d.value / 4 }));
+  // 3. CÁLCULOS HISTÓRICOS PUROS
+  const historicalTotalKm = historicalData.reduce((acc, curr) => acc + curr.total, 0);
+  const numHistoricalYears = historicalData.length;
+  
+  const monthlyAvgHist = numHistoricalYears > 0 ? historicalTotalKm / (numHistoricalYears * 12) : 0;
+  const weeklyAvgHist = numHistoricalYears > 0 ? historicalTotalKm / (numHistoricalYears * 52) : 0;
+  const dailyAvgHist = numHistoricalYears > 0 ? historicalTotalKm / (numHistoricalYears * 365) : 0;
 
-  // 3. CÁLCULOS
+  // 4. CÁLCULOS RITMO ACTUAL
+  const currentTotal = currentYearData?.total || 0;
+  const currentPace = calculatePace(currentTotal); 
+
   const annualData = sortedDataDesc
     .slice(0, 10)
     .sort((a, b) => a.year - b.year)
     .map(d => ({ year: d.year, total: d.total }));
-
-  const totalKm = validData.reduce((acc, curr) => acc + curr.total, 0);
-  let currentYear = validData.find(d => d.year === currentSystemYear);
-  if (!currentYear && validData.length > 0) currentYear = validData[0];
-  const currentYearTotal = currentYear?.total || 0;
-
-  const totalWeeks = validData.length * 52; 
-  const weeklyAvgAllTime = totalWeeks > 0 ? totalKm / totalWeeks : 0;
-  const monthlyAvgAllTime = validData.length > 0 ? totalKm / (validData.length * 12) : 0;
-  const dailyAvgAllTime = validData.length > 0 ? totalKm / (validData.length * 365) : 0;
 
   // Comparación Mensual
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
@@ -150,32 +184,32 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
     borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
   };
 
+  const totalAllKm = validData.reduce((acc, curr) => acc + curr.total, 0);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      
-      {/* GRID SUPERIOR DE TARJETAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         
-        <FuelCard 
+        <StatCard 
           title={t.allTimeDistance}
-          value={`${totalKm.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`}
+          value={`${totalAllKm.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`}
           icon={Trophy}
           color="blue"
           subtext="Total acumulado"
           trendData={trendHistory} 
         />
         
-        <FuelCard 
-          title={`${t.currentTotal} (${currentYear?.year || currentSystemYear})`}
-          value={`${currentYearTotal.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`}
+        <StatCard 
+          title={`${t.currentTotal} (${currentSystemYear})`}
+          value={`${currentTotal.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`}
           icon={Zap}
           color="green"
           subtext={t.keepPushing}
           subtextColor="text-green-500"
-          trendData={currentYear?.months.map(m => ({ value: m.total }))}
+          trendData={currentYearData?.months.map(m => ({ value: m.total }))}
         />
 
-        <FuelCard 
+        <StatCard 
           title={t.activeYears}
           value={validData.length.toString()}
           icon={Calendar}
@@ -183,43 +217,43 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
           subtext="Temporadas"
         />
 
-        <FuelCard 
+        <StatCard 
           title={t.monthlyAvg}
-          value={`${monthlyAvgAllTime.toFixed(1)} km`}
+          value={`${monthlyAvgHist.toFixed(1)} km`}
           icon={TrendingUp}
           color="blue"
-          subtext="Promedio mensual"
-          trendData={monthlyTrend}
+          paceValue={currentPace.monthly}
+          historicalAvg={monthlyAvgHist}
+          unit="km/mes"
+          trendData={trendHistory.slice(-12)} 
         />
 
-        <FuelCard 
+        <StatCard 
           title={t.weeklyAvg}
-          value={`${weeklyAvgAllTime.toFixed(1)} km`}
+          value={`${weeklyAvgHist.toFixed(1)} km`}
           icon={Activity}
           color="purple"
-          subtext="Promedio semanal"
-          trendData={weeklyTrend}
+          paceValue={currentPace.weekly}
+          historicalAvg={weeklyAvgHist}
+          unit="km/sem"
+          trendData={trendHistory.slice(-8)} 
         />
 
-        <FuelCard 
+        <StatCard 
           title={t.dailyAvg}
-          value={`${dailyAvgAllTime.toFixed(2)} km`}
+          value={`${dailyAvgHist.toFixed(2)} km`}
           icon={Calculator}
           color="blue"
-          subtext="Promedio diario"
-          trendData={weeklyTrend}
+          paceValue={currentPace.daily}
+          historicalAvg={dailyAvgHist}
+          unit="km/día"
+          trendData={trendHistory.slice(-14)} 
         />
       </div>
 
-      {/* GRÁFICAS GRANDES INTERACTIVAS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Comparación Mensual */}
         <div className="group relative bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-900/10 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          
-          {/* Brillo de fondo */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          
           <div className="relative z-10">
             <div className="mb-4">
               <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-3">{t.monthlyComparison}</h3>
@@ -263,12 +297,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
           </div>
         </div>
 
-        {/* Progreso Anual */}
         <div className="group relative bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-900/10 transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-          
-          {/* Brillo de fondo */}
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-          
           <div className="relative z-10">
             <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">{t.annualProgress}</h3>
             <div className="h-72">
