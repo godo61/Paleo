@@ -68,15 +68,43 @@ const YearGrid: React.FC<YearGridProps> = ({ data, onUpdate, lang }) => {
     return totals;
   }, [data]);
 
-  // Medias (Divisor 52 para semanas)
+  // --- CÁLCULO DE MEDIAS INTELIGENTE (OPCIÓN B) ---
   const stats = useMemo(() => {
     const total = data.total || 0;
+    const year = data.year;
+    
+    // Detectar fechas
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const isCurrent = year === currentYear;
+
+    let dailyAvg = 0;
+
+    if (isCurrent) {
+      // CASO AÑO ACTUAL: Dividir por días transcurridos (Realidad)
+      const start = new Date(currentYear, 0, 0);
+      const diff = today.getTime() - start.getTime();
+      const oneDay = 1000 * 60 * 60 * 24;
+      const daysPassed = Math.floor(diff / oneDay);
+      
+      // Evitamos división por cero el 1 de Enero a las 00:00
+      dailyAvg = daysPassed > 0 ? total / daysPassed : 0;
+    } else {
+      // CASO AÑO PASADO: Dividir por año completo (Histórico)
+      // Detectamos si fue bisiesto para ser precisos
+      const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+      const daysInYear = isLeap ? 366 : 365;
+      dailyAvg = total / daysInYear;
+    }
+
+    // Proyecciones basadas en velocidad diaria
+    // Esto evita que la media baje artificialmente el día 1 de cada mes.
     return {
-      monthly: total / 12,
-      weekly: total / 52,
-      daily: total / 365
+      monthly: dailyAvg * 30.437, // Promedio días/mes exacto
+      weekly: dailyAvg * 7,
+      daily: dailyAvg
     };
-  }, [data.total]);
+  }, [data.total, data.year]);
 
   // Contexto actual
   const currentContext = useMemo(() => {
