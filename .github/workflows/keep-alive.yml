@@ -11,12 +11,12 @@ jobs:
     steps:
       - name: Hacer peticiones a TODOS los proyectos
         run: |
-          # Proyecto 1 (PaleoDB) - Intenta leer 1 dato
+          # Proyecto 1 (PaleoDB) - Leemos la tabla 'user_data'
           curl -f -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/user_data?select=id&limit=1" \
           -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"
 
-          # Proyecto 2 (FuelMaster) - Intenta leer 1 repostaje
+          # Proyecto 2 (FuelMaster) - Leemos la tabla 'fuel_entries'
           curl -f -X GET "${{ secrets.SUPABASE_URL_2 }}/rest/v1/fuel_entries?select=id&limit=1" \
           -H "apikey: ${{ secrets.SUPABASE_KEY_2 }}" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY_2 }}"
