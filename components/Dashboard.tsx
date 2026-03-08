@@ -142,7 +142,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   const weeklyAvgHist = numHistoricalYears > 0 ? historicalTotalKm / (numHistoricalYears * 52) : 0;
   const dailyAvgHist = numHistoricalYears > 0 ? historicalTotalKm / (numHistoricalYears * 365) : 0;
 
-<<<<<<< HEAD
   // 4. CÁLCULOS RITMO ACTUAL Y PROYECCIÓN
   const currentTotal = currentYearData?.total || 0;
   const currentPace = calculatePace(currentTotal); 
@@ -168,16 +167,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
         projectedTotalLabel: isCurrentYear ? projectedTotal : d.total 
       };
     });
-=======
-  // 4. CÁLCULOS RITMO ACTUAL
-  const currentTotal = currentYearData?.total || 0;
-  const currentPace = calculatePace(currentTotal); 
-
-  const annualData = sortedDataDesc
-    .slice(0, 10)
-    .sort((a, b) => a.year - b.year)
-    .map(d => ({ year: d.year, total: d.total }));
->>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
 
   // Comparación Mensual
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
@@ -214,7 +203,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
 
   const totalAllKm = validData.reduce((acc, curr) => acc + curr.total, 0);
 
-<<<<<<< HEAD
   // --- TEXTOS Y FORMATEADOR SEGURO PARA EL TOOLTIP ---
   const projectedText = lang === 'es' ? 'Proyección restante' : 'Projected remaining';
   const estTotalText = lang === 'es' ? 'Total estimado a 31 Dic' : 'Est. total Dec 31';
@@ -230,8 +218,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
     return [`${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`, t.kilometers || 'Kilómetros'];
   };
 
-=======
->>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -353,7 +339,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                   <XAxis dataKey="year" tick={{fill: axisColor}} axisLine={false} tickLine={false} />
                   <YAxis tick={{fill: axisColor}} axisLine={false} tickLine={false} />
-<<<<<<< HEAD
                   <Tooltip cursor={{fill: darkMode ? '#334155' : '#f1f5f9'}} contentStyle={tooltipStyle} formatter={customTooltipFormatter} />
                   
                   {/* Barra 1: Kilómetros reales (año actual y pasados) */}
@@ -361,10 +346,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                   
                   {/* Barra 2: Proyección (solo aparece si 'projected' no es undefined) */}
                   <Bar dataKey="projected" stackId="a" fill="#3b82f6" fillOpacity={0.3} stroke="#3b82f6" strokeDasharray="3 3" radius={[4, 4, 0, 0]} name="projected" />
-=======
-                  <Tooltip cursor={{fill: darkMode ? '#334155' : '#f1f5f9'}} contentStyle={tooltipStyle} />
-                  <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} name={t.kilometers} />
->>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -375,8 +356,4 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   );
 };
 
-<<<<<<< HEAD
 export default Dashboard;
-=======
-export default Dashboard;
->>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
