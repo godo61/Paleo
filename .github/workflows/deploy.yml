@@ -3,23 +3,12 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main, master ]
-<<<<<<< HEAD
-  workflow_dispatch:
-=======
->>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-<<<<<<< HEAD
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-=======
->>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,10 +20,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-<<<<<<< HEAD
-          cache: 'npm'
-=======
->>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
 
       - name: Install dependencies
         run: npm install
