@@ -2,11 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      registerType: 'autoUpdate', // Añadido para que se actualice sola
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Master Paleo Analytics',
@@ -15,8 +15,8 @@ export default defineConfig({
         theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '.', 
-        scope: '.',
+        start_url: '/Paleo/', // 👈 Cambiado de '.' a '/Paleo/'
+        scope: '/Paleo/',      // 👈 Cambiado de '.' a '/Paleo/'
         orientation: 'any',
         icons: [
           {
@@ -39,7 +39,7 @@ export default defineConfig({
       }
     })
   ],
-  base: './', 
+  base: '/Paleo/', // 👈 ESTE ES EL CAMBIO VITAL
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
