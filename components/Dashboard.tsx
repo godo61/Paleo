@@ -142,31 +142,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   const weeklyAvgHist = numHistoricalYears > 0 ? historicalTotalKm / (numHistoricalYears * 52) : 0;
   const dailyAvgHist = numHistoricalYears > 0 ? historicalTotalKm / (numHistoricalYears * 365) : 0;
 
-  // 4. CÁLCULOS RITMO ACTUAL Y PROYECCIÓN
+  // 4. CÁLCULOS RITMO ACTUAL
   const currentTotal = currentYearData?.total || 0;
   const currentPace = calculatePace(currentTotal); 
-
-  // Comprobar si es año bisiesto para el cálculo exacto de la proyección
-  const isLeapYear = (year: number) => (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-  const daysInCurrentYear = isLeapYear(currentSystemYear) ? 366 : 365;
-  
-  // Total proyectado a final de año y lo restante
-  const projectedTotal = currentPace.daily * daysInCurrentYear;
-  const projectedRemaining = Math.max(0, projectedTotal - currentTotal);
 
   const annualData = sortedDataDesc
     .slice(0, 10)
     .sort((a, b) => a.year - b.year)
-    .map(d => {
-      const isCurrentYear = d.year === currentSystemYear;
-      return { 
-        year: d.year, 
-        total: d.total,
-        // Usamos undefined en lugar de 0 para blindar el Tooltip y la UI en años pasados
-        projected: (isCurrentYear && projectedRemaining > 0) ? projectedRemaining : undefined,
-        projectedTotalLabel: isCurrentYear ? projectedTotal : d.total 
-      };
-    });
+    .map(d => ({ year: d.year, total: d.total }));
 
   // Comparación Mensual
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
@@ -202,21 +185,6 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
   };
 
   const totalAllKm = validData.reduce((acc, curr) => acc + curr.total, 0);
-
-  // --- TEXTOS Y FORMATEADOR SEGURO PARA EL TOOLTIP ---
-  const projectedText = lang === 'es' ? 'Proyección restante' : 'Projected remaining';
-  const estTotalText = lang === 'es' ? 'Total estimado a 31 Dic' : 'Est. total Dec 31';
-
-  const customTooltipFormatter = (value: number, name: string, props: any) => {
-    if (name === 'projected') {
-      const totalLabel = props?.payload?.projectedTotalLabel || value;
-      return [
-        `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} km (${estTotalText}: ${totalLabel.toLocaleString(undefined, { maximumFractionDigits: 1 })} km)`, 
-        projectedText
-      ];
-    }
-    return [`${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} km`, t.kilometers || 'Kilómetros'];
-  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -339,13 +307,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
                   <XAxis dataKey="year" tick={{fill: axisColor}} axisLine={false} tickLine={false} />
                   <YAxis tick={{fill: axisColor}} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{fill: darkMode ? '#334155' : '#f1f5f9'}} contentStyle={tooltipStyle} formatter={customTooltipFormatter} />
-                  
-                  {/* Barra 1: Kilómetros reales (año actual y pasados) */}
-                  <Bar dataKey="total" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} name={t.kilometers} />
-                  
-                  {/* Barra 2: Proyección (solo aparece si 'projected' no es undefined) */}
-                  <Bar dataKey="projected" stackId="a" fill="#3b82f6" fillOpacity={0.3} stroke="#3b82f6" strokeDasharray="3 3" radius={[4, 4, 0, 0]} name="projected" />
+                  <Tooltip cursor={{fill: darkMode ? '#334155' : '#f1f5f9'}} contentStyle={tooltipStyle} />
+                  <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]} name={t.kilometers} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
