@@ -1,0 +1,5 @@
+{
+  "name": "Master Paleo Analytics",
+  "description": "A comprehensive dashboard to manage and visualize rowing training data, tracking kilometers across weeks, months, and years.",
+  "requestFramePermissions": []
+}
