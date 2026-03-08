@@ -128,9 +128,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       const isCurrentYear = d.year === currentSystemYear;
       return {
         year: d.year,
-        real: d.total,
-        Proyección: isCurrentYear ? Math.max(0, projectedFullYear - d.total) : 0,
-        fullLabel: isCurrentYear ? `Actual: ${d.total.toFixed(1)}km | Proyección: ${projectedFullYear.toFixed(1)}km` : `${d.total} km`
+        Acumulado: d.total,
+        Proyección: isCurrentYear ? Number(Math.max(0, projectedFullYear - d.total).toFixed(2)) : 0,
+        fullLabel: isCurrentYear 
+  ? `Actual: ${d.total.toFixed(2)}km | Proyección: ${projectedFullYear.toFixed(2)}km` 
+  : `${d.total.toFixed(2)} km`
       };
     });
 
@@ -223,7 +225,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                 <XAxis dataKey="year" tick={{fill: axisColor}} />
                 <YAxis tick={{fill: axisColor}} />
                 <Tooltip cursor={{fill: 'transparent'}} contentStyle={tooltipStyle} labelFormatter={(year) => `Año ${year}`} />
-                <Bar dataKey="real" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="Acumulado" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
                 <Bar dataKey="Proyección" stackId="a" fill="#3b82f6" fillOpacity={0.2} radius={[4, 4, 0, 0]} stroke="#3b82f6" strokeDasharray="4 4" />
               </BarChart>
             </ResponsiveContainer>
