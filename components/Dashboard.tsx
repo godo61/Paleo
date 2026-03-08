@@ -129,7 +129,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
       return {
         year: d.year,
         real: d.total,
-        ghost: isCurrentYear ? Math.max(0, projectedFullYear - d.total) : 0,
+        Proyección: isCurrentYear ? Math.max(0, projectedFullYear - d.total) : 0,
         fullLabel: isCurrentYear ? `Actual: ${d.total.toFixed(1)}km | Proyección: ${projectedFullYear.toFixed(1)}km` : `${d.total} km`
       };
     });
