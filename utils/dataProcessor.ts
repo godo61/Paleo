@@ -147,4 +147,8 @@ export const calculatePace = (currentTotal: number) => {
     weekly: dailyPace * 7,
     monthly: dailyPace * 30.4375 // Media de días por mes exacta (365.25 / 12)
   };
+<<<<<<< HEAD
 };
+=======
+};
+>>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf

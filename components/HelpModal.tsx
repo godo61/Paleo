@@ -194,4 +194,8 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, lang }) => {
   );
 };
 
+<<<<<<< HEAD
 export default HelpModal;
+=======
+export default HelpModal;
+>>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf

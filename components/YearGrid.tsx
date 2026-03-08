@@ -237,4 +237,8 @@ const YearGrid: React.FC<YearGridProps> = ({ data, onUpdate, lang }) => {
   );
 };
 
+<<<<<<< HEAD
 export default YearGrid;
+=======
+export default YearGrid;
+>>>>>>> 93df4194484e5a94e2aed51cb7994b01f17382bf
