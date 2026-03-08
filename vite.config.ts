@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Master Paleo Analytics',
@@ -15,8 +16,8 @@ export default defineConfig({
         theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '.', 
-        scope: '.',
+        start_url: '/Paleo/', // 👈 Apuntando a la subcarpeta de GitHub
+        scope: '/Paleo/',      // 👈 Muy importante para la PWA
         orientation: 'any',
         icons: [
           {
@@ -39,7 +40,7 @@ export default defineConfig({
       }
     })
   ],
-  base: './', 
+  base: '/Paleo/', // 👈 CAMBIO CLAVE: Nombre exacto de tu repositorio en GitHub
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
