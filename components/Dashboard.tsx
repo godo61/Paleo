@@ -224,7 +224,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, lang, darkMode }) => {
                 <YAxis tick={{fill: axisColor}} />
                 <Tooltip cursor={{fill: 'transparent'}} contentStyle={tooltipStyle} labelFormatter={(year) => `Año ${year}`} />
                 <Bar dataKey="real" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="ghost" stackId="a" fill="#3b82f6" fillOpacity={0.2} radius={[4, 4, 0, 0]} stroke="#3b82f6" strokeDasharray="4 4" />
+                <Bar dataKey="Proyección" stackId="a" fill="#3b82f6" fillOpacity={0.2} radius={[4, 4, 0, 0]} stroke="#3b82f6" strokeDasharray="4 4" />
               </BarChart>
             </ResponsiveContainer>
           </div>
