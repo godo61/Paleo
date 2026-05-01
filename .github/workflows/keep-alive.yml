@@ -2,7 +2,7 @@ name: Mantener Supabase Activo
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '30 9 * * 1,4' # Se ejecutará a las 09:30 UTC solo lunes (1) y jueves (4)
   workflow_dispatch:
 
 jobs:
